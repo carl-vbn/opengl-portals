@@ -118,28 +118,47 @@ int main()
 
     GLuint shaderprog = mkprog("res/vertex.glsl", "res/fragment.glsl");
 
-    Brush cube;
-    cube.min = glm::vec3(-0.5f, -0.5f, -0.5f);
-    cube.max = glm::vec3(0.5f, 0.5f, 0.5f);
+    Brush cube(
+        glm::vec3(-0.5f, -0.5f, -0.5f),
+        glm::vec3(0.5f, 0.5f, 0.5f)
+    );
     load_brush(&cube);
 
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    double previousTime = glfwGetTime();
+    int frameCount = 0;
+
+    GLuint MVP_location = glGetUniformLocation(shaderprog, "u_MVP");
+    GLuint lightdir_location = glGetUniformLocation(shaderprog, "u_lightdir");
+
+    glEnable(GL_DEPTH_TEST);
     while (!glfwWindowShouldClose(window))
     {
+        // FPS Counter
+        double time = glfwGetTime();
+        frameCount++;
+        if (time - previousTime >= 2.0)
+        {
+            std::stringstream titlestream;
+            titlestream << "Portal [" << frameCount / 2.0f << " FPS]";
+            glfwSetWindowTitle(window, titlestream.str().c_str());
+
+            frameCount = 0;
+            previousTime = time;
+        }
+
         process_input(window);
 
-        double time = glfwGetTime();
-
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(shaderprog);
 
         glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians((float)time * 100.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 mvp = projection * view * model;
-        unsigned int mvpLoc = glGetUniformLocation(shaderprog, "MVP");
-        glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
+        glUniformMatrix4fv(MVP_location, 1, GL_FALSE, glm::value_ptr(mvp));
+        glUniform3f(lightdir_location, -0.801783726f, 0.534522484f, 0.267261242f);
 
         glBindVertexArray(cube.loaded_data->vao);
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);

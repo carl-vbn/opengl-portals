@@ -19,8 +19,13 @@ MeshObjectData* gen_meshobjdata(GLfloat* vertices, size_t vertex_array_size, GLu
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_array_size, indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    // aPos
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+
+    // aNormal
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0); 
     glBindVertexArray(0);
@@ -48,17 +53,43 @@ void load_brush(Brush* brush) {
     }
 
     GLfloat vertices[] = {
-        // Bottom face vertices
-        brush->min.x, brush->min.y, brush->min.z, 
-        brush->max.x, brush->min.y, brush->min.z, 
-        brush->max.x, brush->min.y, brush->max.z,
-        brush->min.x, brush->min.y, brush->max.z, 
 
-        // Top face vertices
-        brush->max.x, brush->max.y, brush->min.z, 
-        brush->min.x, brush->max.y, brush->min.z, 
-        brush->min.x, brush->max.y, brush->max.z,
-        brush->max.x, brush->max.y, brush->max.z, 
+        // Model space positions                     Model space normals
+        // Bottom face
+        brush->min.x, brush->min.y, brush->min.z,    0.0f, -1.0f, 0.0f,
+        brush->max.x, brush->min.y, brush->min.z,    0.0f, -1.0f, 0.0f,
+        brush->max.x, brush->min.y, brush->max.z,    0.0f, -1.0f, 0.0f,
+        brush->min.x, brush->min.y, brush->max.z,    0.0f, -1.0f, 0.0f,
+
+        // Top face
+        brush->max.x, brush->max.y, brush->min.z,    0.0f, 1.0f, 0.0f,
+        brush->min.x, brush->max.y, brush->min.z,    0.0f, 1.0f, 0.0f,
+        brush->min.x, brush->max.y, brush->max.z,    0.0f, 1.0f, 0.0f,
+        brush->max.x, brush->max.y, brush->max.z,    0.0f, 1.0f, 0.0f,
+
+        // Back face
+        brush->min.x, brush->min.y, brush->min.z,    0.0f, 0.0f, -1.0f,
+        brush->min.x, brush->max.y, brush->min.z,    0.0f, 0.0f, -1.0f,
+        brush->max.x, brush->max.y, brush->min.z,    0.0f, 0.0f, -1.0f,
+        brush->max.x, brush->min.y, brush->min.z,    0.0f, 0.0f, -1.0f,
+
+        // Left face
+        brush->min.x, brush->min.y, brush->min.z,    -1.0f, 0.0f, 0.0f,
+        brush->min.x, brush->min.y, brush->max.z,    -1.0f, 0.0f, 0.0f,
+        brush->min.x, brush->max.y, brush->max.z,    -1.0f, 0.0f, 0.0f,
+        brush->min.x, brush->max.y, brush->min.z,    -1.0f, 0.0f, 0.0f,
+
+        // Right face
+        brush->max.x, brush->min.y, brush->min.z,    1.0f, 0.0f, 0.0f,
+        brush->max.x, brush->max.y, brush->min.z,    1.0f, 0.0f, 0.0f,
+        brush->max.x, brush->max.y, brush->max.z,    1.0f, 0.0f, 0.0f,
+        brush->max.x, brush->min.y, brush->max.z,    1.0f, 0.0f, 0.0f,
+
+        // Front face
+        brush->min.x, brush->min.y, brush->max.z,    0.0f, 0.0f, 1.0f,
+        brush->max.x, brush->min.y, brush->max.z,    0.0f, 0.0f, 1.0f,
+        brush->max.x, brush->max.y, brush->max.z,    0.0f, 0.0f, 1.0f,
+        brush->min.x, brush->max.y, brush->max.z,    0.0f, 0.0f, 1.0f
     };
 
     GLuint indices[] = {
@@ -71,20 +102,20 @@ void load_brush(Brush* brush) {
         6, 7, 4,
 
         // Back face
-        0, 5, 4,
-        4, 1, 0,
+        8, 9, 10,
+        10, 11, 8,
 
         // Left face
-        0, 3, 6,
-        6, 5, 0,
+        12, 13, 14,
+        14, 15, 12,
 
         // Right face
-        1, 4, 7,
-        7, 2, 1,
+        16, 17, 18,
+        18, 19, 16,
 
         // Front face
-        3, 2, 7,
-        7, 6, 3
+        20, 21, 22,
+        22, 23, 20
     };
 
     brush->loaded_data = gen_meshobjdata(vertices, sizeof(vertices), indices, sizeof(indices));
