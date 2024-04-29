@@ -1,9 +1,12 @@
 CXX := g++
-CXXFLAGS :=
-LDFLAGS := -lglfw
 
 OBJ_PATH := obj
 SRC_PATH := src
+INCLUDE_PATH := include
+
+CXXFLAGS := -g -Wall -I$(INCLUDE_PATH)
+LDFLAGS :=
+LDLIBS := -lglfw
 
 SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.c*)))
 OBJ := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
@@ -11,10 +14,10 @@ OBJ := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
 default: program
 
 program: $(OBJ)
-	$(CXX) -o $@ $(OBJ) $(LDFLAGS)
+	$(CXX) $(LDFLAGS) $(OBJ) $(LDLIBS) -o $@
 
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
-	$(CXX) $(CCXFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 .PHONY: makedir
 makedir:

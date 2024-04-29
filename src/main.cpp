@@ -9,6 +9,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "mesh.h"
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void process_input(GLFWwindow *window);
 
@@ -116,25 +118,10 @@ int main()
 
     GLuint shaderprog = mkprog("res/vertex.glsl", "res/fragment.glsl");
 
-    float vertices[] = {
-        -0.5f, -0.433f, 0.0f, // left  
-         0.5f, -0.433f, 0.0f, // right 
-         0.0f,  0.433f, 0.0f  // top   
-    }; 
-
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0); 
-    glBindVertexArray(0); 
+    Brush cube;
+    cube.min = glm::vec3(-0.5f, -0.5f, -0.5f);
+    cube.max = glm::vec3(0.5f, 0.5f, 0.5f);
+    load_brush(&cube);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -154,15 +141,14 @@ int main()
         unsigned int mvpLoc = glGetUniformLocation(shaderprog, "MVP");
         glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
 
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(cube.loaded_data->vao);
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
  
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+    unload_brush(&cube);
     glDeleteProgram(shaderprog);
 
     glfwTerminate();
