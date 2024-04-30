@@ -10,77 +10,13 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "mesh.h"
+#include "renderer.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void process_input(GLFWwindow *window);
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 800;
-
-// Build an OpenGL Shader progam from a vertex shader and a fragment shader
-int mkprog(const char* vertex_path, const char* fragment_path) {
-    std::ifstream vertex(vertex_path);
-    std::stringstream vertex_src;
-    vertex_src << vertex.rdbuf();
-
-    std::ifstream fragment(fragment_path);
-    std::stringstream fragment_src;
-    fragment_src << fragment.rdbuf();
-
-    // Vertex shader
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    
-    {
-        const std::string& tmp = vertex_src.str();   
-        const char* cstr = tmp.c_str();
-        glShaderSource(vertexShader, 1, &cstr, NULL);
-    }
-
-    // Vertex shader compilation
-    glCompileShader(vertexShader);
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    
-    // Fragment shader
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    
-    {
-        const std::string& tmp = fragment_src.str();   
-        const char* cstr = tmp.c_str();
-        glShaderSource(fragmentShader, 1, &cstr, NULL);
-    }
-
-    // Fragment shader compilation
-    glCompileShader(fragmentShader);
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-
-    // Linking
-    unsigned int shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    return shaderProgram;
-}
 
 int glfw_setup(GLFWwindow** window) {
     glfwInit();
@@ -116,26 +52,38 @@ int main()
     GLFWwindow* window;
     if (glfw_setup(&window) != 0) return -1;
 
-    GLuint shaderprog = mkprog("res/vertex.glsl", "res/fragment.glsl");
+    BaseShader shader;
+    shader.program = mkprog("res/vertex.glsl", "res/fragment.glsl");
+    shader.u_MVP = glGetUniformLocation(shader.program, "u_MVP");
+    shader.u_color = glGetUniformLocation(shader.program, "u_color");
+    shader.u_lightdir = glGetUniformLocation(shader.program, "u_lightdir");
 
-    Brush cube(
-        glm::vec3(-0.5f, -0.5f, -0.5f),
-        glm::vec3(0.5f, 0.5f, 0.5f)
-    );
-    load_brush(&cube);
+    Scene scene;
 
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    scene.geometry.push_back(new Brush(
+        glm::vec3(-1.0f, -0.5f, -0.5f),
+        glm::vec3(1.0f, 0.5f, 0.5f),
+        glm::vec3(1.0f, 0.0f, 0.5f)
+    ));
+
+    scene.geometry.push_back(new Brush(
+        glm::vec3(-0.5f, 0.5f, -0.5f),
+        glm::vec3(0.5f, 0.8f, 0.5f),
+        glm::vec3(0.0f, 1.0f, 0.5f)
+    ));
+
+    load_scene(&scene);
+
+    glm::mat4 projection = mkproj(glm::vec3(0.0f, 0.0f, 1.0f), 0.0f, 0.0f, 45.0f, (float)SCR_WIDTH/SCR_HEIGHT);
     double previousTime = glfwGetTime();
     int frameCount = 0;
-
-    GLuint MVP_location = glGetUniformLocation(shaderprog, "u_MVP");
-    GLuint lightdir_location = glGetUniformLocation(shaderprog, "u_lightdir");
 
     glEnable(GL_DEPTH_TEST);
     while (!glfwWindowShouldClose(window))
     {
         // FPS Counter
         double time = glfwGetTime();
+        scene.time = time;
         frameCount++;
         if (time - previousTime >= 2.0)
         {
@@ -149,26 +97,14 @@ int main()
 
         process_input(window);
 
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glUseProgram(shaderprog);
-
-        glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians((float)time * 100.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
-        glm::mat4 mvp = projection * view * model;
-        glUniformMatrix4fv(MVP_location, 1, GL_FALSE, glm::value_ptr(mvp));
-        glUniform3f(lightdir_location, -0.801783726f, 0.534522484f, 0.267261242f);
-
-        glBindVertexArray(cube.loaded_data->vao);
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+        render(projection, &scene, &shader, 0);
  
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    unload_brush(&cube);
-    glDeleteProgram(shaderprog);
+    unload_scene(&scene);
+    glDeleteProgram(shader.program);
 
     glfwTerminate();
     return 0;
