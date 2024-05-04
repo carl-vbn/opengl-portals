@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <iostream>
 
+#include "primitive_mesh_data.h"
+
 MeshObjectData* gen_meshobjdata(GLfloat* vertices, size_t vertex_array_size, GLuint* indices, size_t index_array_size, uint8_t vertex_data_type) {
     MeshObjectData* data = new MeshObjectData(); // Deleted in del_meshobjdata
 
@@ -57,85 +59,15 @@ void del_meshobjdata(MeshObjectData** data) {
     *data = NULL;
 }
 
-// Creates and fills a VAO for the brush and sets the struct's loaded_data attribute.
-void load_brush(Brush* brush) {
-    if (brush->loaded_data != NULL) {
-        throw std::runtime_error("attempted to load already loaded brush");
-    }
+MeshObjectData* primitives::quad;
+MeshObjectData* primitives::cube;
 
-    GLfloat vertices[] = {
-        // Model space positions                     Model space normals
-        // Bottom face
-        brush->min.x, brush->min.y, brush->min.z,    0.0f, -1.0f, 0.0f,
-        brush->max.x, brush->min.y, brush->min.z,    0.0f, -1.0f, 0.0f,
-        brush->max.x, brush->min.y, brush->max.z,    0.0f, -1.0f, 0.0f,
-        brush->min.x, brush->min.y, brush->max.z,    0.0f, -1.0f, 0.0f,
-
-        // Top face
-        brush->max.x, brush->max.y, brush->min.z,    0.0f, 1.0f, 0.0f,
-        brush->min.x, brush->max.y, brush->min.z,    0.0f, 1.0f, 0.0f,
-        brush->min.x, brush->max.y, brush->max.z,    0.0f, 1.0f, 0.0f,
-        brush->max.x, brush->max.y, brush->max.z,    0.0f, 1.0f, 0.0f,
-
-        // Back face
-        brush->min.x, brush->min.y, brush->min.z,    0.0f, 0.0f, -1.0f,
-        brush->min.x, brush->max.y, brush->min.z,    0.0f, 0.0f, -1.0f,
-        brush->max.x, brush->max.y, brush->min.z,    0.0f, 0.0f, -1.0f,
-        brush->max.x, brush->min.y, brush->min.z,    0.0f, 0.0f, -1.0f,
-
-        // Left face
-        brush->min.x, brush->min.y, brush->min.z,    -1.0f, 0.0f, 0.0f,
-        brush->min.x, brush->min.y, brush->max.z,    -1.0f, 0.0f, 0.0f,
-        brush->min.x, brush->max.y, brush->max.z,    -1.0f, 0.0f, 0.0f,
-        brush->min.x, brush->max.y, brush->min.z,    -1.0f, 0.0f, 0.0f,
-
-        // Right face
-        brush->max.x, brush->min.y, brush->min.z,    1.0f, 0.0f, 0.0f,
-        brush->max.x, brush->max.y, brush->min.z,    1.0f, 0.0f, 0.0f,
-        brush->max.x, brush->max.y, brush->max.z,    1.0f, 0.0f, 0.0f,
-        brush->max.x, brush->min.y, brush->max.z,    1.0f, 0.0f, 0.0f,
-
-        // Front face
-        brush->min.x, brush->min.y, brush->max.z,    0.0f, 0.0f, 1.0f,
-        brush->max.x, brush->min.y, brush->max.z,    0.0f, 0.0f, 1.0f,
-        brush->max.x, brush->max.y, brush->max.z,    0.0f, 0.0f, 1.0f,
-        brush->min.x, brush->max.y, brush->max.z,    0.0f, 0.0f, 1.0f
-    };
-
-    GLuint indices[] = {
-        // Bottom face
-        0, 1, 2,
-        2, 3, 0,
-
-        // Top face
-        4, 5, 6,
-        6, 7, 4,
-
-        // Back face
-        8, 9, 10,
-        10, 11, 8,
-
-        // Left face
-        12, 13, 14,
-        14, 15, 12,
-
-        // Right face
-        16, 17, 18,
-        18, 19, 16,
-
-        // Front face
-        20, 21, 22,
-        22, 23, 20
-    };
-
-    brush->loaded_data = gen_meshobjdata(vertices, sizeof(vertices), indices, sizeof(indices), POSITION_NORMAL);
+void primitives::setup() {
+    quad = gen_meshobjdata(quad_vertices, sizeof(quad_vertices), quad_indices, sizeof(quad_indices), POSITION_UV);
+    cube = gen_meshobjdata(cube_vertices, sizeof(cube_vertices), cube_indices, sizeof(cube_indices), POSITION_NORMAL);
 }
 
-// Destroys a brush's MeshObjectData (VAO, VBO, EBO) and sets the struct's loaded_data property to NULL
-void unload_brush(Brush* brush) {
-    if (brush->loaded_data == NULL) {
-        throw std::runtime_error("attempted to unload already unloaded brush");
-    }
-
-    del_meshobjdata(&brush->loaded_data);
+void primitives::dispose() {
+    del_meshobjdata(&quad);
+    del_meshobjdata(&cube);
 }

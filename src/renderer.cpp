@@ -92,19 +92,21 @@ void render(glm::mat4 projection, Scene* scene, Camera* cam, StandardShader* sha
 
     glm::vec3 direction = cam->GetForwardDirection();
     // std::cout << direction.x << " " << direction.y << " " << direction.z << std::endl;
-    glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians((float)scene->time * 100.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 view = glm::lookAt(
         cam->position, 
         cam->position + direction, 
         glm::vec3(0.0f, 1.0f, 0.0f)
     );
-    glm::mat4 mvp = projection * view * model;
-    glUniformMatrix4fv(shader->u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
     glUniform3f(shader->u_lightdir, -0.801783726f, 0.534522484f, 0.267261242f);
 
     for (size_t i = 0; i<scene->geometry.size(); i++) {
         Brush* brush = scene->geometry[i];
-        glBindVertexArray(brush->loaded_data->vao);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, brush->min);
+        model = glm::scale(model, brush->max - brush->min);
+        glm::mat4 mvp = projection * view * model;
+        glBindVertexArray(primitives::cube->vao);
+        glUniformMatrix4fv(shader->u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
         glUniform3f(shader->u_color, brush->color.r, brush->color.g, brush->color.b);
         glDrawElements(GL_TRIANGLES, BRUSH_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
     }

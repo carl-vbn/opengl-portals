@@ -23,21 +23,6 @@ const unsigned int SCR_HEIGHT = 800;
 
 Camera cam = Camera(glm::vec3(0.0f, 0.0f, 10.0f), -90.0f, 0.0f);
 
-float quad_vertices[] = {
-    // Model space positions     UV
-    -1.0f,  1.0f, 0.0f,          0.0f, 1.0f,
-    -1.0f, -1.0f, 0.0f,          0.0f, 0.0f,
-     1.0f, -1.0f, 0.0f,          1.0f, 0.0f,
-
-    -1.0f,  1.0f, 0.0f,          0.0f, 1.0f,
-     1.0f, -1.0f, 0.0f,          1.0f, 0.0f,
-     1.0f,  1.0f, 0.0f,          1.0f, 1.0f
-};
-
-GLuint quad_indices[] = {
-    0, 1, 2, 3, 4, 5
-};
-
 int glfw_setup(GLFWwindow** window) {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -86,20 +71,20 @@ int main()
     screen_shader.program = mkprog("res/shaders/screen/vertex.glsl", "res/shaders/screen/fragment.glsl");
     screen_shader.u_screentex = glGetUniformLocation(screen_shader.program, "u_screentex");
 
-    MeshObjectData* screen_quad = gen_meshobjdata(quad_vertices, sizeof(quad_vertices), quad_indices, sizeof(quad_indices), POSITION_UV);
+    primitives::setup();
 
     Scene scene;
 
     // Brushes deleted below
     scene.geometry.push_back(new Brush(
-        glm::vec3(-1.0f, -0.5f, -0.5f),
-        glm::vec3(1.0f, 0.5f, 0.5f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),
         glm::vec3(1.0f, 0.0f, 0.5f)
     ));
 
     scene.geometry.push_back(new Brush(
-        glm::vec3(-0.5f, 0.5f, -0.5f),
-        glm::vec3(0.5f, 0.8f, 0.5f),
+        glm::vec3(1.0f, 1.0f, 1.0f),
+        glm::vec3(2.0f, 2.0f, 2.0f),
         glm::vec3(0.0f, 1.0f, 0.5f)
     ));
 
@@ -164,7 +149,7 @@ int main()
         glDisable(GL_DEPTH_TEST);
         glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(screen_shader.program);
-        glBindVertexArray(screen_quad->vao);
+        glBindVertexArray(primitives::quad->vao);
         glBindTexture(GL_TEXTURE_2D, screen_texture);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
  
@@ -174,10 +159,11 @@ int main()
 
     unload_scene(&scene);
     for (size_t i = 0; i<scene.geometry.size(); i++) delete scene.geometry[i];
-    del_meshobjdata(&screen_quad);
 
     glDeleteProgram(shader.program);
     glDeleteFramebuffers(1, &fbo);
+
+    primitives::dispose();
 
     glfwTerminate();
     return 0;
