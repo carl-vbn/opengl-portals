@@ -7,8 +7,16 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-glm::mat4 mkproj(glm::vec3 cam_pos, float yaw, float pitch, float fov, float aspect_ratio) {
-    return glm::translate(glm::perspective(glm::radians(fov), aspect_ratio, 0.1f, 100.0f), -cam_pos);
+glm::vec3 Camera::GetForwardDirection() {
+    glm::vec3 direction;
+    direction.x = cos(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
+    direction.y = sin(glm::radians(this->pitch));
+    direction.z = sin(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
+    return direction;
+}
+
+glm::vec3 Camera::GetRightDirection() {
+    return glm::cross(this->GetForwardDirection(), glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 // Build an OpenGL Shader progam from a vertex shader and a fragment shader
@@ -76,14 +84,20 @@ int mkprog(const char* vertex_path, const char* fragment_path) {
     return shaderProgram;
 }
 
-void render(glm::mat4 projection, Scene* scene, BaseShader* shader, int depth) {
+void render(glm::mat4 projection, Scene* scene, Camera* cam, BaseShader* shader, int depth) {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(shader->program);
 
+    glm::vec3 direction = cam->GetForwardDirection();
+    // std::cout << direction.x << " " << direction.y << " " << direction.z << std::endl;
     glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians((float)scene->time * 100.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
+    glm::mat4 view = glm::lookAt(
+        cam->position, 
+        cam->position + direction, 
+        glm::vec3(0.0f, 1.0f, 0.0f)
+    );
     glm::mat4 mvp = projection * view * model;
     glUniformMatrix4fv(shader->u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
     glUniform3f(shader->u_lightdir, -0.801783726f, 0.534522484f, 0.267261242f);

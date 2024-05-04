@@ -12,7 +12,10 @@
 #include "mesh.h"
 #include "renderer.h"
 
+#define MOVEMENT_SPEED 0.05f
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn);
 void process_input(GLFWwindow *window);
 
 const unsigned int SCR_WIDTH = 800;
@@ -37,6 +40,8 @@ int glfw_setup(GLFWwindow** window) {
     }
     glfwMakeContextCurrent(*window);
     glfwSetFramebufferSizeCallback(*window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(*window, cursor_pos_callback);
+    // glfwSetInputMode(*window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -44,8 +49,12 @@ int glfw_setup(GLFWwindow** window) {
         return -1;
     }
 
+    glfwSetCursorPos(*window, SCR_WIDTH / 2.0f, SCR_HEIGHT / 2.0f);
+
     return 0;
 }
+
+Camera cam = Camera(glm::vec3(0.0f, 0.0f, 10.0f), -90.0f, 0.0f);
 
 int main()
 {
@@ -74,11 +83,12 @@ int main()
 
     load_scene(&scene);
 
-    glm::mat4 projection = mkproj(glm::vec3(0.0f, 0.0f, 1.0f), 0.0f, 0.0f, 45.0f, (float)SCR_WIDTH/SCR_HEIGHT);
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH/SCR_HEIGHT, 0.1f, 100.0f);
     double previousTime = glfwGetTime();
     int frameCount = 0;
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
     while (!glfwWindowShouldClose(window))
     {
         // FPS Counter
@@ -97,7 +107,7 @@ int main()
 
         process_input(window);
 
-        render(projection, &scene, &shader, 0);
+        render(projection, &scene, &cam, &shader, 0);
  
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -114,9 +124,67 @@ void process_input(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        cam.position += cam.GetForwardDirection() * MOVEMENT_SPEED;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        cam.position -= cam.GetForwardDirection() * MOVEMENT_SPEED;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        cam.position += cam.GetRightDirection() * MOVEMENT_SPEED;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        cam.position -= cam.GetRightDirection() * MOVEMENT_SPEED;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        cam.position.y += MOVEMENT_SPEED;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        cam.position.y -= MOVEMENT_SPEED;
+    }
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+}
+
+float lastX;
+float lastY;
+bool firstMouse = true;
+void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
+{
+    float xpos = static_cast<float>(xposIn);
+    float ypos = static_cast<float>(yposIn);
+
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.1f; // change this value to your liking
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    cam.yaw += xoffset;
+    cam.pitch += yoffset;
+
+    // make sure that when pitch is out of bounds, screen doesn't get flipped
+    if (cam.pitch > 89.0f)
+        cam.pitch = 89.0f;
+    if (cam.pitch < -89.0f)
+        cam.pitch = -89.0f;
 }

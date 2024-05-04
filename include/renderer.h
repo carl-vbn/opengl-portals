@@ -11,6 +11,16 @@ struct BaseShader {
     GLuint u_color;
 };
 
+struct Camera {
+    glm::vec3 position;
+    float yaw;
+    float pitch;
+
+    Camera(glm::vec3 position, float yaw, float pitch): position(position), yaw(yaw), pitch(pitch) {} 
+
+    glm::vec3 GetForwardDirection();
+    glm::vec3 GetRightDirection();
+};
+
 int mkprog(const char* vertex_path, const char* fragment_path);
-glm::mat4 mkproj(glm::vec3 cam_pos, float yaw, float pitch, float fov, float aspect_ratio);
-void render(glm::mat4 projection, Scene* scene, BaseShader* shader, int depth);
+void render(glm::mat4 projection, Scene* scene, Camera* cam, BaseShader* shader, int depth);
