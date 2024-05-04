@@ -3,8 +3,8 @@
 #include <stdexcept>
 #include <iostream>
 
-MeshObjectData* gen_meshobjdata(GLfloat* vertices, size_t vertex_array_size, GLuint* indices, size_t index_array_size) {
-    MeshObjectData* data = new MeshObjectData();
+MeshObjectData* gen_meshobjdata(GLfloat* vertices, size_t vertex_array_size, GLuint* indices, size_t index_array_size, uint8_t vertex_data_type) {
+    MeshObjectData* data = new MeshObjectData(); // Deleted in del_meshobjdata
 
     unsigned int VAO, VBO, EBO;
 
@@ -19,13 +19,23 @@ MeshObjectData* gen_meshobjdata(GLfloat* vertices, size_t vertex_array_size, GLu
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_array_size, indices, GL_STATIC_DRAW);
 
-    // aPos
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
+    if (vertex_data_type == POSITION_NORMAL) {
+        // aPos
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
 
-    // aNormal
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+        // aNormal
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+    } else if (vertex_data_type == POSITION_UV) {
+        // aPos
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+
+        // aNormal
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+    }
 
     glBindBuffer(GL_ARRAY_BUFFER, 0); 
     glBindVertexArray(0);
@@ -43,6 +53,7 @@ void del_meshobjdata(MeshObjectData** data) {
     glDeleteBuffers(1, &(*data)->vbo);
     glDeleteBuffers(1, &(*data)->ebo);
     
+    delete *data;
     *data = NULL;
 }
 
@@ -53,7 +64,6 @@ void load_brush(Brush* brush) {
     }
 
     GLfloat vertices[] = {
-
         // Model space positions                     Model space normals
         // Bottom face
         brush->min.x, brush->min.y, brush->min.z,    0.0f, -1.0f, 0.0f,
@@ -118,7 +128,7 @@ void load_brush(Brush* brush) {
         22, 23, 20
     };
 
-    brush->loaded_data = gen_meshobjdata(vertices, sizeof(vertices), indices, sizeof(indices));
+    brush->loaded_data = gen_meshobjdata(vertices, sizeof(vertices), indices, sizeof(indices), POSITION_NORMAL);
 }
 
 // Destroys a brush's MeshObjectData (VAO, VBO, EBO) and sets the struct's loaded_data property to NULL

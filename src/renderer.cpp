@@ -84,7 +84,7 @@ int mkprog(const char* vertex_path, const char* fragment_path) {
     return shaderProgram;
 }
 
-void render(glm::mat4 projection, Scene* scene, Camera* cam, BaseShader* shader, int depth) {
+void render(glm::mat4 projection, Scene* scene, Camera* cam, StandardShader* shader, int depth) {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
