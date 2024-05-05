@@ -33,10 +33,18 @@ struct Camera {
     glm::vec3 GetRightDirection();
 };
 
+struct RenderTarget {
+    GLuint fbo;
+    GLuint rbo;
+    GLuint texture;
+};
+
 namespace renderer {
     int setup(int scr_width, int scr_height, float fov);
     void dispose();
     int load_shader(const char* vertex_path, const char* fragment_path);
-    void render_scene(Scene* scene, Camera* cam, glm::mat4 projection, int depth);
+    int gen_rendertarget(RenderTarget* target, int width, int height);
+    void del_rendertarget(RenderTarget* target);
+    void render_scene(Scene* scene, Camera* cam, glm::mat4 projection);
     void render_screen(Scene* scene, Camera* cam);
 }

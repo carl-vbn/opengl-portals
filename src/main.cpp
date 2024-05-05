@@ -79,6 +79,12 @@ int main()
         glm::vec3(0.0f, 1.0f, 0.5f)
     ));
 
+    scene.geometry.push_back(new Brush(
+        glm::vec3(-6.5f, -1.5f, -0.2f),
+        glm::vec3(-3.5f, 1.5f, -0.01f),
+        glm::vec3(0.0f, 0.0f, 0.0f)
+    ));
+
     scene.portals.push_back(new Portal(
         glm::vec3(0.0f, 0.0f, 0.0f),
         glm::vec3(0.0f, 0.0f, 1.0f),
