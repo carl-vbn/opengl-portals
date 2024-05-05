@@ -27,5 +27,10 @@ struct Camera {
     glm::vec3 GetRightDirection();
 };
 
-int mkprog(const char* vertex_path, const char* fragment_path);
-void render(glm::mat4 projection, Scene* scene, Camera* cam, StandardShader* shader, int depth);
+namespace renderer {
+    int setup(int scr_width, int scr_height, float fov);
+    void dispose();
+    int load_shader(const char* vertex_path, const char* fragment_path);
+    void render_scene(Scene* scene, Camera* cam, glm::mat4 projection, int depth);
+    void render_screen(Scene* scene, Camera* cam);
+}

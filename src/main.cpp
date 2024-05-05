@@ -61,17 +61,8 @@ int main()
     GLFWwindow* window;
     if (glfw_setup(&window) != 0) return -1;
 
-    StandardShader shader;
-    shader.program = mkprog("res/shaders/standard/vertex.glsl", "res/shaders/standard/fragment.glsl");
-    shader.u_MVP = glGetUniformLocation(shader.program, "u_MVP");
-    shader.u_color = glGetUniformLocation(shader.program, "u_color");
-    shader.u_lightdir = glGetUniformLocation(shader.program, "u_lightdir");
-
-    ScreenShader screen_shader;
-    screen_shader.program = mkprog("res/shaders/screen/vertex.glsl", "res/shaders/screen/fragment.glsl");
-    screen_shader.u_screentex = glGetUniformLocation(screen_shader.program, "u_screentex");
-
     primitives::setup();
+    renderer::setup(SCR_WIDTH, SCR_HEIGHT, glm::radians(45.0f));
 
     Scene scene;
 
@@ -88,41 +79,17 @@ int main()
         glm::vec3(0.0f, 1.0f, 0.5f)
     ));
 
-    load_scene(&scene);
+    scene.portals.push_back(new Portal(
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f),
+        1.0f,
+        1.0f
+    ));
 
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH/SCR_HEIGHT, 0.1f, 100.0f);
     double previousTime = glfwGetTime();
     int frameCount = 0;
 
-    GLuint fbo;
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-    GLuint screen_texture;
-    glGenTextures(1, &screen_texture);
-    glBindTexture(GL_TEXTURE_2D, screen_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screen_texture, 0);
-
-    GLuint rbo;
-    glGenRenderbuffers(1, &rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo); 
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);  
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cerr << "Renderbuffer failure" << std::endl;
-        return 1;
-    }
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cerr << "Framebuffer failure" << std::endl;
-        return 1;
-    }
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glEnable(GL_CULL_FACE);
     while (!glfwWindowShouldClose(window))
     {
         // FPS Counter
@@ -141,28 +108,16 @@ int main()
 
         process_input(window);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-        glEnable(GL_DEPTH_TEST);
-        render(projection, &scene, &cam, &shader, 0);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glDisable(GL_DEPTH_TEST);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glUseProgram(screen_shader.program);
-        glBindVertexArray(primitives::quad->vao);
-        glBindTexture(GL_TEXTURE_2D, screen_texture);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        renderer::render_screen(&scene, &cam);
  
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    unload_scene(&scene);
     for (size_t i = 0; i<scene.geometry.size(); i++) delete scene.geometry[i];
+    for (size_t i = 0; i<scene.portals.size(); i++) delete scene.portals[i];
 
-    glDeleteProgram(shader.program);
-    glDeleteFramebuffers(1, &fbo);
-
+    renderer::dispose();
     primitives::dispose();
 
     glfwTerminate();

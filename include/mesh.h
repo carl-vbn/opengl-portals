@@ -15,16 +15,6 @@ struct MeshObjectData
     GLuint ebo;
 };
 
-struct Brush
-{
-    glm::vec3 min;
-    glm::vec3 max;
-
-    glm::vec3 color;
-
-    Brush(glm::vec3 min, glm::vec3 max, glm::vec3 color) : min(min), max(max), color(color) {}
-};
-
 MeshObjectData *gen_meshobjdata(GLfloat *vertices, size_t vertex_array_size, GLuint *indices, size_t index_array_size, uint8_t vertex_data_type);
 void del_meshobjdata(MeshObjectData **data);
 
