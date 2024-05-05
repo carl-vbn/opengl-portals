@@ -23,6 +23,7 @@ glm::vec3 Camera::GetRightDirection() {
 namespace renderer {
     StandardShader standard_shader;
     ScreenShader screen_shader;
+    PortalShader portal_shader;
     glm::mat4 projection;
     GLuint fbo;
     GLuint screen_texture;
@@ -102,6 +103,10 @@ namespace renderer {
         screen_shader.program = load_shader("res/shaders/screen/vertex.glsl", "res/shaders/screen/fragment.glsl");
         screen_shader.u_screentex = glGetUniformLocation(screen_shader.program, "u_screentex");
 
+        portal_shader.program = load_shader("res/shaders/portal/vertex.glsl", "res/shaders/portal/fragment.glsl");
+        portal_shader.u_rendertex = glGetUniformLocation(portal_shader.program, "u_rendertex");
+        portal_shader.u_MVP = glGetUniformLocation(portal_shader.program, "u_MVP");
+
         projection = glm::perspective(fov, (float)scr_width/scr_height, 0.1f, 100.0f);
 
         glGenFramebuffers(1, &fbo);
@@ -145,7 +150,7 @@ namespace renderer {
     // Render the specified scene from the specified POV
     void render_scene(Scene* scene, Camera* cam, glm::mat4 projection, int depth) {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(standard_shader.program);
 
@@ -169,6 +174,15 @@ namespace renderer {
             glUniform3f(standard_shader.u_color, brush->color.r, brush->color.g, brush->color.b);
             glDrawElements(GL_TRIANGLES, BRUSH_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
         }
+
+        glUseProgram(portal_shader.program);
+        glBindVertexArray(primitives::quad->vao);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 1.5f));
+        glm::mat4 mvp = projection * view * model;
+        glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+        glBindTexture(GL_TEXTURE_2D, screen_texture);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     }
 
     // Render everything to the screen (this includes the FBO pass)

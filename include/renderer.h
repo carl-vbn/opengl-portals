@@ -16,6 +16,12 @@ struct ScreenShader {
     GLuint u_screentex;
 };
 
+struct PortalShader {
+    GLuint program;
+    GLuint u_rendertex;
+    GLuint u_MVP;
+};
+
 struct Camera {
     glm::vec3 position;
     float yaw;

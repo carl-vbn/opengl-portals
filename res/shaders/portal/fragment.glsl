@@ -1,12 +1,11 @@
 #version 330 core
-
-uniform vec3 u_lightdir;
-uniform vec3 u_color;
-
-in vec3 frag_normal;
+  
+in vec2 frag_uv;
 out vec4 frag_color;
 
+uniform sampler2D u_rendertex;
+
 void main()
-{
-   frag_color = vec4(u_color, 1.0) * (dot(frag_normal, u_lightdir) + 0.2);
+{ 
+    frag_color = texture(u_rendertex, frag_uv);
 }
