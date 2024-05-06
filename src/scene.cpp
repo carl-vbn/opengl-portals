@@ -6,9 +6,9 @@
 #include <cstring>
 
 #define ARRAY_TO_VEC3(arr) glm::vec3((arr)[0], (arr)[1], (arr)[2])
-#define READ_INT32(value) file.read(reinterpret_cast<char*>((value)), sizeof(int));
-#define READ_FLOAT(value) file.read(reinterpret_cast<char*>((value)), sizeof(float));
-#define READ_FLOAT3(value) file.read(reinterpret_cast<char*>((value)), sizeof(float) * 3);
+#define READ_INT32(value) file.read(reinterpret_cast<char*>((value)), sizeof(int))
+#define READ_FLOAT(value) file.read(reinterpret_cast<char*>((value)), sizeof(float))
+#define READ_FLOAT3(value) file.read(reinterpret_cast<char*>((value)), sizeof(float) * 3)
 
 void load_scene_file(const char* path, Scene* scene) {
     std::ifstream file(path, std::ios::binary);

@@ -132,6 +132,8 @@ void process_input(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
         cam.position.y -= MOVEMENT_SPEED;
     }
+
+    renderer::debug_cube_xray = glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS;
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)

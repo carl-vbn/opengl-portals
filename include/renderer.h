@@ -4,6 +4,8 @@
 
 #include "scene.h"
 
+#define PRINT_VEC3(vec3) std::cout << (vec3).x << " " << (vec3).y << " " << (vec3).z << std::endl
+
 struct StandardShader {
     GLuint program;
     GLuint u_MVP;
@@ -27,12 +29,14 @@ struct Camera {
     float yaw;
     float pitch;
 
-    Camera(glm::vec3 position, float yaw, float pitch): position(position), yaw(yaw), pitch(pitch) {} 
+    Camera(glm::vec3 position, float yaw, float pitch): position(position), yaw(yaw), pitch(pitch) {}
+    Camera(glm::mat4 transform);
 
     glm::vec3 GetForwardDirection();
     glm::vec3 GetRightDirection();
 
     glm::mat4 GetView();
+    glm::mat4 GetLocalToWorldMatrix();
 };
 
 struct RenderTarget {
@@ -49,4 +53,6 @@ namespace renderer {
     void del_rendertarget(RenderTarget* target);
     void render_scene(Scene* scene, glm::mat4 view, glm::mat4 projection);
     void render_screen(Scene* scene, Camera* cam);
+
+    extern bool debug_cube_xray;
 }

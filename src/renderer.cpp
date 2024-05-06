@@ -8,6 +8,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+Camera::Camera(glm::mat4 transform) {
+    position = glm::vec3(transform[3]);
+
+    yaw = glm::degrees(asin(-transform[2][0]));
+    pitch = glm::degrees(atan2(transform[2][1], transform[2][2]));
+}
+
 glm::vec3 Camera::GetForwardDirection() {
     glm::vec3 direction;
     direction.x = cos(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
@@ -29,6 +36,14 @@ glm::mat4 Camera::GetView() {
     );
 }
 
+glm::mat4 Camera::GetLocalToWorldMatrix() {
+    glm::mat4 rotationMatrix = glm::rotate(glm::rotate(glm::mat4(1.0f), glm::radians(pitch), glm::vec3(1.0f, 0.0f, 0.0f)), glm::radians(yaw), glm::vec3(0.0f, 1.0f, 0.0f));
+    
+    glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), position);
+    
+    return translationMatrix * rotationMatrix;
+}
+
 namespace renderer {
     StandardShader standard_shader;
     ScreenShader screen_shader;
@@ -36,6 +51,8 @@ namespace renderer {
     glm::mat4 projection;
     RenderTarget main_target;
     RenderTarget portal1_target, portal2_target;
+    glm::vec3 debug_cube_pos(0.0f, 0.0f, 0.0f);
+    bool debug_cube_xray = false;
 
     // Build an OpenGL Shader progam from a vertex shader and a fragment shader
     int load_shader(const char* vertex_path, const char* fragment_path) {
@@ -172,20 +189,22 @@ namespace renderer {
 
     // Render the specified scene from the specified POV
     void render_scene(Scene* scene, glm::mat4 view, glm::mat4 projection) {
+        glm::mat4 model;
+        glm::mat4 mvp;
+
         glClearColor(0.1f, 0.1f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(standard_shader.program);
+        glBindVertexArray(primitives::cube->vao);
 
         glUniform3f(standard_shader.u_lightdir, scene->light_dir.x, scene->light_dir.y, scene->light_dir.z);
-
-        glBindVertexArray(primitives::cube->vao);
         for (size_t i = 0; i<scene->geometry.size(); i++) {
             Brush* brush = &scene->geometry[i];
-            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::mat4(1.0f);
             model = glm::translate(model, brush->min);
             model = glm::scale(model, brush->max - brush->min);
-            glm::mat4 mvp = projection * view * model;
+            mvp = projection * view * model;
             glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
             glUniform3f(standard_shader.u_color, brush->color.r, brush->color.g, brush->color.b);
             glDrawElements(GL_TRIANGLES, BRUSH_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
@@ -195,8 +214,8 @@ namespace renderer {
         glUseProgram(portal_shader.program);
         glBindVertexArray(primitives::quad->vao);
         
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), scene->portal1.position);
-        glm::mat4 mvp = projection * view * model;
+        model = glm::translate(glm::mat4(1.0f), scene->portal1.position);
+        mvp = projection * view * model;
         glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
         glBindTexture(GL_TEXTURE_2D, portal1_target.texture);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -206,17 +225,39 @@ namespace renderer {
         glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
         glBindTexture(GL_TEXTURE_2D, portal2_target.texture);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        // Draw debug cube
+        glUseProgram(standard_shader.program);
+        glBindVertexArray(primitives::cube->vao);
+        if (debug_cube_xray) glClear(GL_DEPTH_BUFFER_BIT);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, debug_cube_pos - glm::vec3(0.5f));
+        mvp = projection * view * model;
+        glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+        glUniform3f(standard_shader.u_color, 1.0f, 0.0f, 0.0f);
+        glDrawElements(GL_TRIANGLES, BRUSH_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
     }
 
     // Render everything to the screen (this includes the FBO pass)
     void render_screen(Scene* scene, Camera* cam) {
+        // Test
+        glm::mat4 cam_transform = cam->GetLocalToWorldMatrix();
+        Camera cam_copy(cam_transform);
+        std::cout << cam->pitch << " " << cam_copy.pitch << std::endl;
+
         // First portal target
         glm::mat4 p1model = glm::translate(glm::mat4(1.0f), scene->portal1.position);
-        glm::mat4 p2model = glm::translate(glm::mat4(1.0f), scene->portal2.position);
-        glm::mat4 cam_model = glm::inverse(cam->GetView());
-        glm::mat4 m = p1model * glm::inverse(p2model) * cam_model;
+        glm::mat4 p2model = glm::rotate(glm::translate(glm::mat4(1.0f), scene->portal2.position), glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 cam_model = cam->GetLocalToWorldMatrix();
+        glm::mat4 p1cam_transform = p2model * cam_model * glm::inverse(p1model);
+
+        debug_cube_pos = glm::vec3(p1cam_transform[3]);
+        Camera p1cam(p1cam_transform);
+        // std::cout << p1cam.yaw << " " << p1cam.pitch << std::endl;
+        
         glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
-        render_scene(scene, glm::inverse(m), projection);
+        glEnable(GL_DEPTH_TEST);
+        render_scene(scene, p1cam.GetView(), projection);
 
         // Main target
         glBindFramebuffer(GL_FRAMEBUFFER, main_target.fbo);
