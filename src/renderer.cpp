@@ -20,6 +20,15 @@ glm::vec3 Camera::GetRightDirection() {
     return glm::cross(this->GetForwardDirection(), glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
+glm::mat4 Camera::GetView() {
+    glm::vec3 direction = this->GetForwardDirection();
+    return glm::lookAt(
+        this->position, 
+        this->position + direction, 
+        glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+}
+
 namespace renderer {
     StandardShader standard_shader;
     ScreenShader screen_shader;
@@ -162,19 +171,12 @@ namespace renderer {
     }
 
     // Render the specified scene from the specified POV
-    void render_scene(Scene* scene, Camera* cam, glm::mat4 projection) {
+    void render_scene(Scene* scene, glm::mat4 view, glm::mat4 projection) {
         glClearColor(0.1f, 0.1f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(standard_shader.program);
 
-        glm::vec3 direction = cam->GetForwardDirection();
-        // std::cout << direction.x << " " << direction.y << " " << direction.z << std::endl;
-        glm::mat4 view = glm::lookAt(
-            cam->position, 
-            cam->position + direction, 
-            glm::vec3(0.0f, 1.0f, 0.0f)
-        );
         glUniform3f(standard_shader.u_lightdir, scene->light_dir.x, scene->light_dir.y, scene->light_dir.z);
 
         glBindVertexArray(primitives::cube->vao);
@@ -209,19 +211,17 @@ namespace renderer {
     // Render everything to the screen (this includes the FBO pass)
     void render_screen(Scene* scene, Camera* cam) {
         // First portal target
-        Camera p1cam(scene->portal2.position, -90.0f + glm::sin(scene->time)*30.0f, 0.0f);
+        glm::mat4 p1model = glm::translate(glm::mat4(1.0f), scene->portal1.position);
+        glm::mat4 p2model = glm::translate(glm::mat4(1.0f), scene->portal2.position);
+        glm::mat4 cam_model = glm::inverse(cam->GetView());
+        glm::mat4 m = p1model * glm::inverse(p2model) * cam_model;
         glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
-        render_scene(scene, &p1cam, projection);
-
-        // Second portal target
-        Camera p2cam(scene->portal1.position, -90.0f + glm::sin(scene->time)*30.0f, 0.0f);
-        glBindFramebuffer(GL_FRAMEBUFFER, portal2_target.fbo);
-        render_scene(scene, &p2cam, projection);
+        render_scene(scene, glm::inverse(m), projection);
 
         // Main target
         glBindFramebuffer(GL_FRAMEBUFFER, main_target.fbo);
         glEnable(GL_DEPTH_TEST);
-        render_scene(scene, cam, projection);
+        render_scene(scene, cam->GetView(), projection);
 
         // Draw to screen
         glBindFramebuffer(GL_FRAMEBUFFER, 0);

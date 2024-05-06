@@ -31,6 +31,8 @@ struct Camera {
 
     glm::vec3 GetForwardDirection();
     glm::vec3 GetRightDirection();
+
+    glm::mat4 GetView();
 };
 
 struct RenderTarget {
@@ -45,6 +47,6 @@ namespace renderer {
     int load_shader(const char* vertex_path, const char* fragment_path);
     int gen_rendertarget(RenderTarget* target, int width, int height);
     void del_rendertarget(RenderTarget* target);
-    void render_scene(Scene* scene, Camera* cam, glm::mat4 projection);
+    void render_scene(Scene* scene, glm::mat4 view, glm::mat4 projection);
     void render_screen(Scene* scene, Camera* cam);
 }
