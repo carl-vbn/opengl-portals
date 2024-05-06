@@ -24,8 +24,10 @@ struct Portal {
 };
 
 struct Scene {
-    std::vector<Brush*> geometry;
-    std::vector<Portal*> portals;
+    std::vector<Brush> geometry;
+    std::vector<Portal> portals;
     glm::vec3 light_dir;
     double time;
 };
+
+void load_scene_file(const char* path, Scene* scene);

@@ -176,7 +176,7 @@ namespace renderer {
 
         glBindVertexArray(primitives::cube->vao);
         for (size_t i = 0; i<scene->geometry.size(); i++) {
-            Brush* brush = scene->geometry[i];
+            Brush* brush = &scene->geometry[i];
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, brush->min);
             model = glm::scale(model, brush->max - brush->min);
@@ -186,10 +186,11 @@ namespace renderer {
             glDrawElements(GL_TRIANGLES, BRUSH_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
         }
 
+        // Draw portal
         glUseProgram(portal_shader.program);
         glBindVertexArray(primitives::quad->vao);
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(-5.0f, 0.0f, 0.0f));
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
         glm::mat4 mvp = projection * view * model;
         glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
         glBindTexture(GL_TEXTURE_2D, portal1_target.texture);
@@ -199,7 +200,7 @@ namespace renderer {
     // Render everything to the screen (this includes the FBO pass)
     void render_screen(Scene* scene, Camera* cam) {
         // First portal target
-        Camera pcam(glm::vec3(0.0f,0,10.0f), -90.0f + glm::sin(scene->time)*20.0f, 0.0f);
+        Camera pcam(glm::vec3(0.0f,0,10.0f), -90.0f + glm::sin(scene->time)*30.0f, 0.0f);
         glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
         render_scene(scene, &pcam, projection);
         glBindFramebuffer(GL_FRAMEBUFFER, main_target.fbo);

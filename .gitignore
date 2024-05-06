@@ -4,3 +4,6 @@
 # Compilation output
 obj/
 program
+
+# Blender cache
+*.blend1
