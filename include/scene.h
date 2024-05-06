@@ -20,12 +20,14 @@ struct Portal {
     float width;
     float height;
 
+    Portal() : position(glm::vec3(0.0f)), normal(glm::vec3(0.0f)), width(0.0f), height(0.0f) {}
     Portal(glm::vec3 position, glm::vec3 normal, float width, float height) : position(position), normal(normal), width(width), height(height) {}
 };
 
 struct Scene {
     std::vector<Brush> geometry;
-    std::vector<Portal> portals;
+    Portal portal1;
+    Portal portal2;
     glm::vec3 light_dir;
     double time;
 };

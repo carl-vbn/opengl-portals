@@ -13,6 +13,10 @@
 void load_scene_file(const char* path, Scene* scene) {
     std::ifstream file(path, std::ios::binary);
 
+    float light_dir[3];
+    READ_FLOAT3(light_dir);
+    scene->light_dir = ARRAY_TO_VEC3(light_dir);
+
     int brush_count;
     READ_INT32(&brush_count);
 
@@ -31,4 +35,8 @@ void load_scene_file(const char* path, Scene* scene) {
 
         scene->geometry.push_back(brush);
     }
+
+    // Hard code portals for now
+    scene->portal1 = Portal(glm::vec3(-8.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 1.0f, 1.0f);
+    scene->portal2 = Portal(glm::vec3(8.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 1.0f, 1.0f);
 }

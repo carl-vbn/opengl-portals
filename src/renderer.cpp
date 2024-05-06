@@ -26,7 +26,7 @@ namespace renderer {
     PortalShader portal_shader;
     glm::mat4 projection;
     RenderTarget main_target;
-    RenderTarget portal1_target;
+    RenderTarget portal1_target, portal2_target;
 
     // Build an OpenGL Shader progam from a vertex shader and a fragment shader
     int load_shader(const char* vertex_path, const char* fragment_path) {
@@ -146,6 +146,7 @@ namespace renderer {
 
         gen_rendertarget(&main_target, scr_width, scr_height);
         gen_rendertarget(&portal1_target, scr_width, scr_height);
+        gen_rendertarget(&portal2_target, scr_width, scr_height);
         
         glEnable(GL_CULL_FACE);
 
@@ -156,11 +157,13 @@ namespace renderer {
         glDeleteProgram(standard_shader.program);
         glDeleteProgram(screen_shader.program);
         del_rendertarget(&main_target);
+        del_rendertarget(&portal1_target);
+        del_rendertarget(&portal2_target);
     }
 
     // Render the specified scene from the specified POV
     void render_scene(Scene* scene, Camera* cam, glm::mat4 projection) {
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.1f, 0.1f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(standard_shader.program);
@@ -172,7 +175,7 @@ namespace renderer {
             cam->position + direction, 
             glm::vec3(0.0f, 1.0f, 0.0f)
         );
-        glUniform3f(standard_shader.u_lightdir, -0.801783726f, 0.534522484f, 0.267261242f);
+        glUniform3f(standard_shader.u_lightdir, scene->light_dir.x, scene->light_dir.y, scene->light_dir.z);
 
         glBindVertexArray(primitives::cube->vao);
         for (size_t i = 0; i<scene->geometry.size(); i++) {
@@ -186,24 +189,34 @@ namespace renderer {
             glDrawElements(GL_TRIANGLES, BRUSH_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
         }
 
-        // Draw portal
+        // Draw portals
         glUseProgram(portal_shader.program);
         glBindVertexArray(primitives::quad->vao);
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+        
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), scene->portal1.position);
         glm::mat4 mvp = projection * view * model;
         glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
         glBindTexture(GL_TEXTURE_2D, portal1_target.texture);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        model = glm::translate(glm::mat4(1.0f), scene->portal2.position);
+        mvp = projection * view * model;
+        glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+        glBindTexture(GL_TEXTURE_2D, portal2_target.texture);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     }
 
     // Render everything to the screen (this includes the FBO pass)
     void render_screen(Scene* scene, Camera* cam) {
         // First portal target
-        Camera pcam(glm::vec3(0.0f,0,10.0f), -90.0f + glm::sin(scene->time)*30.0f, 0.0f);
+        Camera p1cam(scene->portal2.position, -90.0f + glm::sin(scene->time)*30.0f, 0.0f);
         glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
-        render_scene(scene, &pcam, projection);
-        glBindFramebuffer(GL_FRAMEBUFFER, main_target.fbo);
+        render_scene(scene, &p1cam, projection);
+
+        // Second portal target
+        Camera p2cam(scene->portal1.position, -90.0f + glm::sin(scene->time)*30.0f, 0.0f);
+        glBindFramebuffer(GL_FRAMEBUFFER, portal2_target.fbo);
+        render_scene(scene, &p2cam, projection);
 
         // Main target
         glBindFramebuffer(GL_FRAMEBUFFER, main_target.fbo);

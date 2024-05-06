@@ -8,5 +8,5 @@ out vec4 frag_color;
 
 void main()
 {
-   frag_color = vec4(u_color, 1.0) * (dot(frag_normal, u_lightdir) + 0.2);
+   frag_color = vec4(u_color, 1.0) * clamp(dot(frag_normal, -u_lightdir), 0.1, 1.0);
 }
