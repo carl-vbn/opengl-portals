@@ -7,19 +7,32 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 Camera::Camera(glm::mat4 transform) {
     position = glm::vec3(transform[3]);
 
-    yaw = glm::degrees(asin(-transform[2][0]));
-    pitch = glm::degrees(atan2(transform[2][1], transform[2][2]));
+    float pitch_radians, yaw_radians, roll_radians;
+    glm::extractEulerAngleXYZ(transform, pitch_radians, yaw_radians, roll_radians);
+
+    if (roll_radians > 0.01 || roll_radians < -0.01) {
+        std::cout << roll_radians << std::endl;
+        // pitch_radians -= glm::pi<float>();
+    }
+
+    this->pitch = glm::degrees(pitch_radians);
+    this->yaw = glm::degrees(yaw_radians);
 }
 
 glm::vec3 Camera::GetForwardDirection() {
+    // direction.x = cos(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
+    // direction.y = sin(glm::radians(this->pitch));
+    // direction.z = sin(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
+
     glm::vec3 direction;
-    direction.x = cos(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
+    direction.x = -sin(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
     direction.y = sin(glm::radians(this->pitch));
-    direction.z = sin(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
+    direction.z = -cos(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
     return direction;
 }
 
@@ -28,16 +41,25 @@ glm::vec3 Camera::GetRightDirection() {
 }
 
 glm::mat4 Camera::GetView() {
-    glm::vec3 direction = this->GetForwardDirection();
-    return glm::lookAt(
-        this->position, 
-        this->position + direction, 
-        glm::vec3(0.0f, 1.0f, 0.0f)
-    );
+    // glm::vec3 direction = this->GetForwardDirection();
+    // return glm::lookAt(
+    //     this->position, 
+    //     this->position + direction, 
+    //     glm::vec3(0.0f, 1.0f, 0.0f)
+    // );
+
+    glm::mat4 view(1.0f);
+
+    view = glm::rotate(view, glm::radians(-this->pitch), glm::vec3(1.0f, 0.0f, 0.0f));
+    view = glm::rotate(view, glm::radians(-this->yaw), glm::vec3(0.0f, 1.0f, 0.0f));
+
+    view = glm::translate(view, -this->position);
+    
+    return view;
 }
 
 glm::mat4 Camera::GetLocalToWorldMatrix() {
-    glm::mat4 rotationMatrix = glm::rotate(glm::rotate(glm::mat4(1.0f), glm::radians(pitch), glm::vec3(1.0f, 0.0f, 0.0f)), glm::radians(yaw), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 rotationMatrix = glm::eulerAngleXY(glm::radians(this->pitch), glm::degrees(this->yaw));
     
     glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), position);
     
@@ -243,7 +265,8 @@ namespace renderer {
         // Test
         glm::mat4 cam_transform = cam->GetLocalToWorldMatrix();
         Camera cam_copy(cam_transform);
-        std::cout << cam->pitch << " " << cam_copy.pitch << std::endl;
+        // std::cout << cam_copy.yaw-cam->yaw << " " << cam_copy.pitch-cam->pitch << std::endl;
+        std::cout << cam->yaw << " " << cam->pitch << std::endl;
 
         // First portal target
         glm::mat4 p1model = glm::translate(glm::mat4(1.0f), scene->portal1.position);
@@ -252,12 +275,12 @@ namespace renderer {
         glm::mat4 p1cam_transform = p2model * cam_model * glm::inverse(p1model);
 
         debug_cube_pos = glm::vec3(p1cam_transform[3]);
-        Camera p1cam(p1cam_transform);
-        // std::cout << p1cam.yaw << " " << p1cam.pitch << std::endl;
+        // Camera p1cam(p1cam_transform);
+        // // std::cout << p1cam.yaw << " " << p1cam.pitch << std::endl;
         
-        glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
-        glEnable(GL_DEPTH_TEST);
-        render_scene(scene, p1cam.GetView(), projection);
+        // glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
+        // glEnable(GL_DEPTH_TEST);
+        // render_scene(scene, p1cam.GetView(), projection);
 
         // Main target
         glBindFramebuffer(GL_FRAMEBUFFER, main_target.fbo);

@@ -23,7 +23,7 @@ void process_input(GLFWwindow *window);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 800;
 
-Camera cam = Camera(glm::vec3(0.0f, 5.0f, 10.0f), -90.0f, 0.0f);
+Camera cam = Camera(glm::vec3(0.0f, 5.0f, 10.0f), 0.0f, 0.0f);
 
 int glfw_setup(GLFWwindow** window) {
     glfwInit();
@@ -146,7 +146,7 @@ void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
     float xpos = static_cast<float>(xposIn) - SCR_WIDTH / 2.0f;
     float ypos = static_cast<float>(yposIn) - SCR_HEIGHT / 2.0f;
 
-    cam.yaw = xpos * MOUSE_X_SENSITIVITY - 90.0f;
+    cam.yaw = -xpos * MOUSE_X_SENSITIVITY;
     cam.pitch = -ypos * MOUSE_Y_SENSITIVITY;
 
     // make sure that when pitch is out of bounds, screen doesn't get flipped
