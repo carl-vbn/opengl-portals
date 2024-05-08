@@ -9,6 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "scene.h"
 #include "mesh.h"
 #include "renderer.h"
 
@@ -24,6 +25,7 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 800;
 
 Camera cam = Camera(glm::vec3(0.0f, 5.0f, 10.0f), 0.0f, 0.0f);
+Scene scene;
 
 int glfw_setup(GLFWwindow** window) {
     glfwInit();
@@ -66,7 +68,6 @@ int main()
     primitives::setup();
     renderer::setup(SCR_WIDTH, SCR_HEIGHT, glm::radians(45.0f));
 
-    Scene scene;
     load_scene_file("res/scene.bin", &scene);
 
     double previousTime = glfwGetTime();
@@ -106,32 +107,35 @@ int main()
 
 void process_input(GLFWwindow *window)
 {
+    glm::vec3 newPos = cam.position;
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        cam.position += cam.GetForwardDirection() * MOVEMENT_SPEED;
+        newPos += cam.GetForwardDirection() * MOVEMENT_SPEED;
     }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        cam.position -= cam.GetForwardDirection() * MOVEMENT_SPEED;
+        newPos -= cam.GetForwardDirection() * MOVEMENT_SPEED;
     }
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        cam.position += cam.GetRightDirection() * MOVEMENT_SPEED;
+        newPos += cam.GetRightDirection() * MOVEMENT_SPEED;
     }
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        cam.position -= cam.GetRightDirection() * MOVEMENT_SPEED;
+        newPos -= cam.GetRightDirection() * MOVEMENT_SPEED;
     }
 
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        cam.position.y += MOVEMENT_SPEED;
+        newPos.y += MOVEMENT_SPEED;
     }
 
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        cam.position.y -= MOVEMENT_SPEED;
+        newPos.y -= MOVEMENT_SPEED;
     }
+
+    portal_aware_movement(&cam, newPos, &scene);
 
     renderer::debug_cube_xray = glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS;
 }

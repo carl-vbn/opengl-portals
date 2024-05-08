@@ -32,4 +32,19 @@ struct Scene {
     double time;
 };
 
+struct Camera {
+    glm::vec3 position;
+    float yaw;
+    float pitch;
+
+    Camera(glm::vec3 position, float yaw, float pitch): position(position), yaw(yaw), pitch(pitch) {}
+
+    glm::vec3 GetForwardDirection();
+    glm::vec3 GetRightDirection();
+
+    glm::mat4 GetView();
+    glm::mat4 GetLocalToWorldMatrix();
+};
+
 void load_scene_file(const char* path, Scene* scene);
+void portal_aware_movement(Camera* cam, glm::vec3 targetPos, Scene* scene);

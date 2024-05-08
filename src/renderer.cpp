@@ -7,50 +7,8 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/string_cast.hpp>
-
-glm::vec3 Camera::GetForwardDirection() {
-    // direction.x = cos(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
-    // direction.y = sin(glm::radians(this->pitch));
-    // direction.z = sin(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
-
-    glm::vec3 direction;
-    direction.x = -sin(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
-    direction.y = sin(glm::radians(this->pitch));
-    direction.z = -cos(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
-    return direction;
-}
-
-glm::vec3 Camera::GetRightDirection() {
-    return glm::cross(this->GetForwardDirection(), glm::vec3(0.0f, 1.0f, 0.0f));
-}
-
-glm::mat4 Camera::GetView() {
-    // glm::vec3 direction = this->GetForwardDirection();
-    // return glm::lookAt(
-    //     this->position, 
-    //     this->position + direction, 
-    //     glm::vec3(0.0f, 1.0f, 0.0f)
-    // );
-
-    glm::mat4 view(1.0f);
-
-    view = glm::rotate(view, glm::radians(-this->pitch), glm::vec3(1.0f, 0.0f, 0.0f));
-    view = glm::rotate(view, glm::radians(-this->yaw), glm::vec3(0.0f, 1.0f, 0.0f));
-
-    view = glm::translate(view, -this->position);
-    
-    return view;
-}
-
-glm::mat4 Camera::GetLocalToWorldMatrix() {
-    glm::mat4 rotationMatrix = glm::eulerAngleXY(glm::radians(this->pitch), glm::degrees(this->yaw));
-    
-    glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), position);
-    
-    return translationMatrix * rotationMatrix;
-}
+#include <glm/gtx/euler_angles.hpp>
 
 namespace renderer {
     StandardShader standard_shader;

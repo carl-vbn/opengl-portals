@@ -1,7 +1,5 @@
 #pragma once
 
-#include <glm/gtc/matrix_transform.hpp>
-
 #include "scene.h"
 
 #define PRINT_VEC3(vec3) std::cout << (vec3).x << " " << (vec3).y << " " << (vec3).z << std::endl
@@ -22,20 +20,6 @@ struct PortalShader {
     GLuint program;
     GLuint u_rendertex;
     GLuint u_MVP;
-};
-
-struct Camera {
-    glm::vec3 position;
-    float yaw;
-    float pitch;
-
-    Camera(glm::vec3 position, float yaw, float pitch): position(position), yaw(yaw), pitch(pitch) {}
-
-    glm::vec3 GetForwardDirection();
-    glm::vec3 GetRightDirection();
-
-    glm::mat4 GetView();
-    glm::mat4 GetLocalToWorldMatrix();
 };
 
 struct RenderTarget {
