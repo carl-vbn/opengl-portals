@@ -8,21 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/euler_angles.hpp>
-
-Camera::Camera(glm::mat4 transform) {
-    position = glm::vec3(transform[3]);
-
-    float pitch_radians, yaw_radians, roll_radians;
-    glm::extractEulerAngleXYZ(transform, pitch_radians, yaw_radians, roll_radians);
-
-    if (roll_radians > 0.01 || roll_radians < -0.01) {
-        std::cout << roll_radians << std::endl;
-        // pitch_radians -= glm::pi<float>();
-    }
-
-    this->pitch = glm::degrees(pitch_radians);
-    this->yaw = glm::degrees(yaw_radians);
-}
+#include <glm/gtx/string_cast.hpp>
 
 glm::vec3 Camera::GetForwardDirection() {
     // direction.x = cos(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
@@ -73,7 +59,7 @@ namespace renderer {
     glm::mat4 projection;
     RenderTarget main_target;
     RenderTarget portal1_target, portal2_target;
-    glm::vec3 debug_cube_pos(0.0f, 0.0f, 0.0f);
+    glm::mat4 debug_cube_transform(1.0f);
     bool debug_cube_xray = false;
 
     // Build an OpenGL Shader progam from a vertex shader and a fragment shader
@@ -252,9 +238,7 @@ namespace renderer {
         glUseProgram(standard_shader.program);
         glBindVertexArray(primitives::cube->vao);
         if (debug_cube_xray) glClear(GL_DEPTH_BUFFER_BIT);
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, debug_cube_pos - glm::vec3(0.5f));
-        mvp = projection * view * model;
+        mvp = projection * view * debug_cube_transform;
         glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
         glUniform3f(standard_shader.u_color, 1.0f, 0.0f, 0.0f);
         glDrawElements(GL_TRIANGLES, BRUSH_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
@@ -262,25 +246,18 @@ namespace renderer {
 
     // Render everything to the screen (this includes the FBO pass)
     void render_screen(Scene* scene, Camera* cam) {
-        // Test
-        glm::mat4 cam_transform = cam->GetLocalToWorldMatrix();
-        Camera cam_copy(cam_transform);
-        // std::cout << cam_copy.yaw-cam->yaw << " " << cam_copy.pitch-cam->pitch << std::endl;
-        std::cout << cam->yaw << " " << cam->pitch << std::endl;
-
         // First portal target
         glm::mat4 p1model = glm::translate(glm::mat4(1.0f), scene->portal1.position);
         glm::mat4 p2model = glm::rotate(glm::translate(glm::mat4(1.0f), scene->portal2.position), glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 cam_model = cam->GetLocalToWorldMatrix();
-        glm::mat4 p1cam_transform = p2model * cam_model * glm::inverse(p1model);
-
-        debug_cube_pos = glm::vec3(p1cam_transform[3]);
-        // Camera p1cam(p1cam_transform);
-        // // std::cout << p1cam.yaw << " " << p1cam.pitch << std::endl;
+        glm::mat4 p1cam_view = glm::eulerAngleXY(-glm::radians(cam->pitch), -glm::radians(cam->yaw)) * glm::inverse(p2model * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p1model));
         
-        // glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
-        // glEnable(GL_DEPTH_TEST);
-        // render_scene(scene, p1cam.GetView(), projection);
+        glm::mat4 p1cam_transform = p2model * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p1model) * glm::eulerAngleXY(glm::radians(cam->pitch), glm::radians(cam->yaw));
+        debug_cube_transform = p1cam_transform;
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
+        glEnable(GL_DEPTH_TEST);
+        render_scene(scene, p1cam_view, projection);
 
         // Main target
         glBindFramebuffer(GL_FRAMEBUFFER, main_target.fbo);

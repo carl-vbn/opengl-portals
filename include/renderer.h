@@ -30,7 +30,6 @@ struct Camera {
     float pitch;
 
     Camera(glm::vec3 position, float yaw, float pitch): position(position), yaw(yaw), pitch(pitch) {}
-    Camera(glm::mat4 transform);
 
     glm::vec3 GetForwardDirection();
     glm::vec3 GetRightDirection();
