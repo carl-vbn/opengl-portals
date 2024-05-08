@@ -246,14 +246,27 @@ namespace renderer {
 
     // Render everything to the screen (this includes the FBO pass)
     void render_screen(Scene* scene, Camera* cam) {
-        // First portal target
         glm::mat4 p1model = glm::translate(glm::mat4(1.0f), scene->portal1.position);
-        glm::mat4 p2model = glm::rotate(glm::translate(glm::mat4(1.0f), scene->portal2.position), glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 p2model = glm::translate(glm::mat4(1.0f), scene->portal2.position);
+        glm::mat4 p1model_rotated = glm::rotate(p1model, glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 p2model_rotated = glm::rotate(p2model, glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 cam_model = cam->GetLocalToWorldMatrix();
-        glm::mat4 p1cam_view = glm::eulerAngleXY(-glm::radians(cam->pitch), -glm::radians(cam->yaw)) * glm::inverse(p2model * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p1model));
         
-        glm::mat4 p1cam_transform = p2model * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p1model) * glm::eulerAngleXY(glm::radians(cam->pitch), glm::radians(cam->yaw));
+        // First portal target
+        glm::mat4 p1cam_view = glm::eulerAngleXY(-glm::radians(cam->pitch), -glm::radians(cam->yaw)) * glm::inverse(p2model_rotated * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p1model));
+        glm::mat4 p1cam_transform = p2model_rotated * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p1model) * glm::eulerAngleXY(glm::radians(cam->pitch), glm::radians(cam->yaw));
         debug_cube_transform = p1cam_transform;
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
+        glEnable(GL_DEPTH_TEST);
+        render_scene(scene, p1cam_view, projection);
+
+        // Second portal target
+        glm::mat4 p2cam_view = glm::eulerAngleXY(-glm::radians(cam->pitch), -glm::radians(cam->yaw)) * glm::inverse(p1model_rotated * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p2model));
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, portal2_target.fbo);
+        glEnable(GL_DEPTH_TEST);
+        render_scene(scene, p2cam_view, projection);
         
         glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
         glEnable(GL_DEPTH_TEST);
