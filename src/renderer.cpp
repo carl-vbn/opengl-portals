@@ -211,13 +211,14 @@ namespace renderer {
         glm::mat4 cam_model = cam->GetLocalToWorldMatrix();
         
         // First portal target
-        glm::mat4 p1cam_view = glm::eulerAngleXY(-glm::radians(cam->pitch), -glm::radians(cam->yaw)) * glm::inverse(p2model_rotated * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p1model));
-        glm::mat4 p1cam_transform = p2model_rotated * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p1model) * glm::eulerAngleXY(glm::radians(cam->pitch), glm::radians(cam->yaw));
-        debug_cube_transform = p1cam_transform;
+        Camera p1cam = Camera(pcam_transform(cam, &scene->portal1, &scene->portal2));
+        debug_cube_transform = p1cam.GetLocalToWorldMatrix();
+
+        PRINT_VEC3(p1cam.position);
         
         glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
         glEnable(GL_DEPTH_TEST);
-        render_scene(scene, p1cam_view, projection);
+        render_scene(scene, p1cam.GetView(), projection);
 
         // Second portal target
         glm::mat4 p2cam_view = glm::eulerAngleXY(-glm::radians(cam->pitch), -glm::radians(cam->yaw)) * glm::inverse(p1model_rotated * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p2model));
@@ -225,10 +226,6 @@ namespace renderer {
         glBindFramebuffer(GL_FRAMEBUFFER, portal2_target.fbo);
         glEnable(GL_DEPTH_TEST);
         render_scene(scene, p2cam_view, projection);
-        
-        glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
-        glEnable(GL_DEPTH_TEST);
-        render_scene(scene, p1cam_view, projection);
 
         // Main target
         glBindFramebuffer(GL_FRAMEBUFFER, main_target.fbo);

@@ -44,6 +44,16 @@ void load_scene_file(const char* path, Scene* scene) {
     scene->portal2 = Portal(glm::vec3(8.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 1.0f, 1.0f);
 }
 
+Camera::Camera(glm::mat4 transform) {
+    this->SetTransform(transform);
+}
+
+void Camera::SetTransform(glm::mat4 transform) {
+    this->yaw = glm::sign(transform[2][0]) * glm::degrees(glm::acos(transform[0][0]));
+    this->pitch = glm::sign(transform[1][2]) * glm::degrees(glm::acos(transform[1][1]));
+    this->position = glm::vec3(transform[3]);
+} 
+
 glm::vec3 Camera::GetForwardDirection() {
     // direction.x = cos(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
     // direction.y = sin(glm::radians(this->pitch));
@@ -79,11 +89,20 @@ glm::mat4 Camera::GetView() {
 }
 
 glm::mat4 Camera::GetLocalToWorldMatrix() {
-    glm::mat4 rotationMatrix = glm::eulerAngleXY(glm::radians(this->pitch), glm::degrees(this->yaw));
+    glm::mat4 rotationMatrix = glm::eulerAngleXY(glm::radians(this->pitch), glm::radians(this->yaw));
     
     glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), position);
     
     return translationMatrix * rotationMatrix;
+}
+
+glm::mat4 pcam_transform(Camera* real_cam, Portal* portal, Portal* linked_portal) {
+    glm::mat4 p1model = glm::translate(glm::mat4(1.0f), portal->position);
+    glm::mat4 p2model = glm::translate(glm::mat4(1.0f), linked_portal->position);
+    glm::mat4 p2model_rotated = glm::rotate(p2model, glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 cam_model = real_cam->GetLocalToWorldMatrix();
+    
+    return p2model_rotated * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p1model) * glm::eulerAngleXY(glm::radians(real_cam->pitch), glm::radians(real_cam->yaw));
 }
 
 bool find_portal_intersection(glm::vec3 start, glm::vec3 stop, Portal* portal, glm::vec3* intersection) {
@@ -104,10 +123,7 @@ bool find_portal_intersection(glm::vec3 start, glm::vec3 stop, Portal* portal, g
 void portal_aware_movement(Camera* cam, glm::vec3 targetPos, Scene* scene) {
     glm::vec3 intersection;
     if (find_portal_intersection(cam->position, targetPos, &scene->portal1, &intersection)) {
-        // glm::vec3 remainingTranslation = targetPos - intersection;
-        // remainingTranslation.z *= -1.0f;
-        cam->position = scene->portal2.position;
-        cam->yaw += 180.0f;
+        cam->SetTransform(pcam_transform(cam, &scene->portal1, &scene->portal2));
     } else {
         cam->position = targetPos;
     }

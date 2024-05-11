@@ -14,8 +14,8 @@
 #include "renderer.h"
 
 #define MOVEMENT_SPEED 0.05f
-#define MOUSE_X_SENSITIVITY 0.5f
-#define MOUSE_Y_SENSITIVITY 0.3f
+#define MOUSE_X_SENSITIVITY 0.1f
+#define MOUSE_Y_SENSITIVITY 0.1f
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn);
@@ -26,6 +26,10 @@ const unsigned int SCR_HEIGHT = 800;
 
 Camera cam = Camera(glm::vec3(0.0f, 5.0f, 10.0f), 0.0f, 0.0f);
 Scene scene;
+
+float lastx = 0.0f;
+float lasty = 0.0f;
+bool focused = false;
 
 int glfw_setup(GLFWwindow** window) {
     glfwInit();
@@ -108,11 +112,12 @@ int main()
 void process_input(GLFWwindow *window)
 {
     glm::vec3 newPos = cam.position;
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         newPos += cam.GetForwardDirection() * MOVEMENT_SPEED;
+        std::cout << cam.yaw << " " << cam.pitch << std::endl;
     }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
@@ -135,6 +140,16 @@ void process_input(GLFWwindow *window)
         newPos.y -= MOVEMENT_SPEED;
     }
 
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
+        focused = true;
+        lastx = 0.0f;
+        lasty = 0.0f;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        focused = false;
+    }
+
     portal_aware_movement(&cam, newPos, &scene);
 
     renderer::debug_cube_xray = glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS;
@@ -147,11 +162,24 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
+    if (!focused) return;
+
     float xpos = static_cast<float>(xposIn) - SCR_WIDTH / 2.0f;
     float ypos = static_cast<float>(yposIn) - SCR_HEIGHT / 2.0f;
 
-    cam.yaw = -xpos * MOUSE_X_SENSITIVITY;
-    cam.pitch = -ypos * MOUSE_Y_SENSITIVITY;
+    if (lastx == 0.0f && lasty == 0.0f) {
+        lastx = xpos;
+        lasty = ypos;
+    }
+
+    float offsetx = xpos - lastx;
+    float offsety = ypos - lasty;
+
+    cam.yaw -= offsetx * MOUSE_X_SENSITIVITY;
+    // cam.pitch -= offsety * MOUSE_Y_SENSITIVITY;
+
+    lastx = xpos;
+    lasty = ypos;
 
     // make sure that when pitch is out of bounds, screen doesn't get flipped
     if (cam.pitch > 89.0f)

@@ -38,13 +38,17 @@ struct Camera {
     float pitch;
 
     Camera(glm::vec3 position, float yaw, float pitch): position(position), yaw(yaw), pitch(pitch) {}
+    Camera(glm::mat4 transform);
 
     glm::vec3 GetForwardDirection();
     glm::vec3 GetRightDirection();
 
     glm::mat4 GetView();
     glm::mat4 GetLocalToWorldMatrix();
+
+    void SetTransform(glm::mat4 transform);
 };
 
 void load_scene_file(const char* path, Scene* scene);
+glm::mat4 pcam_transform(Camera* real_cam, Portal* portal, Portal* linked_portal);
 void portal_aware_movement(Camera* cam, glm::vec3 targetPos, Scene* scene);
