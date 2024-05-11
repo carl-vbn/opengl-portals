@@ -102,16 +102,17 @@ glm::mat4 pcam_transform(Camera* real_cam, Portal* portal, Portal* linked_portal
     glm::mat4 p2model_rotated = glm::rotate(p2model, glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 cam_model = real_cam->GetLocalToWorldMatrix();
     
-    return p2model_rotated * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p1model) * glm::eulerAngleXY(glm::radians(real_cam->pitch), glm::radians(real_cam->yaw));
+    // TODO Figure out why I need to add a minus to the pitch to make this work??
+    return p2model_rotated * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p1model) * glm::eulerAngleXY(glm::radians(-real_cam->pitch), glm::radians(real_cam->yaw));
 }
 
 bool find_portal_intersection(glm::vec3 start, glm::vec3 stop, Portal* portal, glm::vec3* intersection) {
     float dist;
     glm::vec3 translationVector = stop - start;
     glm::vec3 dir = glm::normalize(translationVector);
-    if (glm::intersectRayPlane(start, dir, portal->position, portal->normal, dist)) {
+    if (glm::dot(dir, portal->normal) < 0.0f && glm::intersectRayPlane(start, dir, portal->position, portal->normal, dist)) {
         glm::vec3 planeIntersection = start + dir * dist;
-        if (dist < glm::length(translationVector) + 0.001 && planeIntersection.x < portal->position.x + portal->width) {
+        if (dist < glm::length(translationVector) + 0.001 && planeIntersection.x > portal->position.x - portal->width && planeIntersection.x < portal->position.x + portal->width) {
             *intersection = planeIntersection;
             return true;
         }
@@ -124,6 +125,10 @@ void portal_aware_movement(Camera* cam, glm::vec3 targetPos, Scene* scene) {
     glm::vec3 intersection;
     if (find_portal_intersection(cam->position, targetPos, &scene->portal1, &intersection)) {
         cam->SetTransform(pcam_transform(cam, &scene->portal1, &scene->portal2));
+        std::cout << "P1 -> P2" << std::endl;
+    } else if (find_portal_intersection(cam->position, targetPos, &scene->portal2, &intersection)) {
+        cam->SetTransform(pcam_transform(cam, &scene->portal2, &scene->portal1));
+        std::cout << "P2 -> P1" << std::endl;
     } else {
         cam->position = targetPos;
     }

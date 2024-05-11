@@ -117,7 +117,6 @@ void process_input(GLFWwindow *window)
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         newPos += cam.GetForwardDirection() * MOVEMENT_SPEED;
-        std::cout << cam.yaw << " " << cam.pitch << std::endl;
     }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
@@ -176,7 +175,7 @@ void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
     float offsety = ypos - lasty;
 
     cam.yaw -= offsetx * MOUSE_X_SENSITIVITY;
-    // cam.pitch -= offsety * MOUSE_Y_SENSITIVITY;
+    cam.pitch -= offsety * MOUSE_Y_SENSITIVITY;
 
     lastx = xpos;
     lasty = ypos;
