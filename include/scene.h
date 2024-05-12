@@ -44,7 +44,7 @@ struct Camera {
     glm::vec3 GetRightDirection();
 
     glm::mat4 GetView();
-    glm::mat4 GetLocalToWorldMatrix();
+    glm::mat4 GetTransform();
 
     void SetTransform(glm::mat4 transform);
 };

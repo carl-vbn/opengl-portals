@@ -126,6 +126,7 @@ namespace renderer {
         standard_shader.u_MVP = glGetUniformLocation(standard_shader.program, "u_MVP");
         standard_shader.u_color = glGetUniformLocation(standard_shader.program, "u_color");
         standard_shader.u_lightdir = glGetUniformLocation(standard_shader.program, "u_lightdir");
+        standard_shader.u_highlightfrontface = glGetUniformLocation(standard_shader.program, "u_highlightfrontface");
 
         screen_shader.program = load_shader("res/shaders/screen/vertex.glsl", "res/shaders/screen/fragment.glsl");
         screen_shader.u_screentex = glGetUniformLocation(screen_shader.program, "u_screentex");
@@ -165,6 +166,7 @@ namespace renderer {
         glBindVertexArray(primitives::cube->vao);
 
         glUniform3f(standard_shader.u_lightdir, scene->light_dir.x, scene->light_dir.y, scene->light_dir.z);
+        glUniform1i(standard_shader.u_highlightfrontface, 0);
         for (size_t i = 0; i<scene->geometry.size(); i++) {
             Brush* brush = &scene->geometry[i];
             model = glm::mat4(1.0f);
@@ -196,9 +198,10 @@ namespace renderer {
         glUseProgram(standard_shader.program);
         glBindVertexArray(primitives::cube->vao);
         if (debug_cube_xray) glClear(GL_DEPTH_BUFFER_BIT);
-        mvp = projection * view * debug_cube_transform;
+        mvp = projection * view * glm::translate(debug_cube_transform, glm::vec3(-0.5f, -0.5f, -0.5f));
         glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
         glUniform3f(standard_shader.u_color, 1.0f, 0.0f, 0.0f);
+        glUniform1i(standard_shader.u_highlightfrontface, 1);
         glDrawElements(GL_TRIANGLES, BRUSH_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
     }
 
@@ -206,7 +209,7 @@ namespace renderer {
     void render_screen(Scene* scene, Camera* cam) {        
         // First portal target
         Camera p1cam = Camera(pcam_transform(cam, &scene->portal1, &scene->portal2));
-        debug_cube_transform = p1cam.GetLocalToWorldMatrix();
+        debug_cube_transform = p1cam.GetTransform();
         
         glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
         glEnable(GL_DEPTH_TEST);

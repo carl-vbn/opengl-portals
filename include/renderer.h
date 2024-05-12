@@ -9,6 +9,7 @@ struct StandardShader {
     GLuint u_MVP;
     GLuint u_lightdir;
     GLuint u_color;
+    GLuint u_highlightfrontface;
 };
 
 struct ScreenShader {

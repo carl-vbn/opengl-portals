@@ -49,8 +49,8 @@ Camera::Camera(glm::mat4 transform) {
 }
 
 void Camera::SetTransform(glm::mat4 transform) {
-    this->yaw = glm::sign(transform[2][0]) * glm::degrees(glm::acos(transform[0][0]));
-    this->pitch = glm::sign(transform[1][2]) * glm::degrees(glm::acos(transform[1][1]));
+    this->yaw = -glm::sign(transform[0][2]) * glm::degrees(glm::acos(transform[0][0]));
+    this->pitch = -glm::sign(transform[2][1]) * glm::degrees(glm::acos(transform[1][1]));
     this->position = glm::vec3(transform[3]);
 } 
 
@@ -88,8 +88,8 @@ glm::mat4 Camera::GetView() {
     return view;
 }
 
-glm::mat4 Camera::GetLocalToWorldMatrix() {
-    glm::mat4 rotationMatrix = glm::eulerAngleXY(glm::radians(this->pitch), glm::radians(this->yaw));
+glm::mat4 Camera::GetTransform() {
+    glm::mat4 rotationMatrix = glm::eulerAngleYX(glm::radians(this->yaw), glm::radians(this->pitch));
     
     glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), position);
     
@@ -100,10 +100,9 @@ glm::mat4 pcam_transform(Camera* real_cam, Portal* portal, Portal* linked_portal
     glm::mat4 p1model = glm::translate(glm::mat4(1.0f), portal->position);
     glm::mat4 p2model = glm::translate(glm::mat4(1.0f), linked_portal->position);
     glm::mat4 p2model_rotated = glm::rotate(p2model, glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 cam_model = real_cam->GetLocalToWorldMatrix();
+    glm::mat4 cam_model = real_cam->GetTransform();
     
-    // TODO Figure out why I need to add a minus to the pitch to make this work??
-    return p2model_rotated * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p1model) * glm::eulerAngleXY(glm::radians(-real_cam->pitch), glm::radians(real_cam->yaw));
+    return p2model_rotated * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p1model) * glm::eulerAngleXY(glm::radians(real_cam->pitch), glm::radians(real_cam->yaw));
 }
 
 bool find_portal_intersection(glm::vec3 start, glm::vec3 stop, Portal* portal, glm::vec3* intersection) {
