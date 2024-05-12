@@ -102,7 +102,7 @@ glm::mat4 pcam_transform(Camera* real_cam, Portal* portal, Portal* linked_portal
     glm::mat4 p2model_rotated = glm::rotate(p2model, glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 cam_model = real_cam->GetTransform();
     
-    return p2model_rotated * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p1model) * glm::eulerAngleXY(glm::radians(real_cam->pitch), glm::radians(real_cam->yaw));
+    return p2model_rotated * glm::translate(glm::mat4(1.0f), glm::vec3(cam_model[3])) * glm::inverse(p1model) * glm::eulerAngleYX(glm::radians(real_cam->yaw), glm::radians(real_cam->pitch));
 }
 
 bool find_portal_intersection(glm::vec3 start, glm::vec3 stop, Portal* portal, glm::vec3* intersection) {
