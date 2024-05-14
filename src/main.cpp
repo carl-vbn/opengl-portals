@@ -13,7 +13,7 @@
 #include "mesh.h"
 #include "renderer.h"
 
-#define MOVEMENT_SPEED 0.05f
+#define MOVEMENT_SPEED 0.01f
 #define MOUSE_X_SENSITIVITY 0.1f
 #define MOUSE_Y_SENSITIVITY 0.1f
 

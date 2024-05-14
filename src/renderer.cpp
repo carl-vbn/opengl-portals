@@ -155,13 +155,14 @@ namespace renderer {
     }
 
     // Render the specified scene from the specified POV
-    void render_scene(Scene* scene, glm::mat4 view, glm::mat4 projection) {
+    void render_scene(Scene* scene, glm::mat4 view, glm::mat4 projection, bool draw_portals=true) {
         glm::mat4 model;
         glm::mat4 mvp;
 
         glClearColor(0.1f, 0.1f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Draw brushes
         glUseProgram(standard_shader.program);
         glBindVertexArray(primitives::cube->vao);
 
@@ -169,40 +170,43 @@ namespace renderer {
         glUniform1i(standard_shader.u_highlightfrontface, 0);
         for (size_t i = 0; i<scene->geometry.size(); i++) {
             Brush* brush = &scene->geometry[i];
+            glm::vec3 half_size = (brush->max - brush->min) / 2.0f;
             model = glm::mat4(1.0f);
-            model = glm::translate(model, brush->min);
-            model = glm::scale(model, brush->max - brush->min);
+            model = glm::translate(model, brush->min + half_size);
+            model = glm::scale(model, half_size);
             mvp = projection * view * model;
             glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
             glUniform3f(standard_shader.u_color, brush->color.r, brush->color.g, brush->color.b);
-            glDrawElements(GL_TRIANGLES, BRUSH_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
         }
 
         // Draw portals
-        glUseProgram(portal_shader.program);
-        glBindVertexArray(primitives::quad->vao);
-        
-        model = glm::translate(glm::mat4(1.0f), scene->portal1.position);
-        mvp = projection * view * model;
-        glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
-        glBindTexture(GL_TEXTURE_2D, portal1_target.texture);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        if (draw_portals) {
+            glDisable(GL_CULL_FACE);
+            glUseProgram(portal_shader.program);
+            
+            model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal1.position), glm::vec3(scene->portal1.width, scene->portal1.height, 0.01f));
+            mvp = projection * view * model;
+            glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+            glBindTexture(GL_TEXTURE_2D, portal1_target.texture);
+            glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
 
-        model = glm::translate(glm::mat4(1.0f), scene->portal2.position);
-        mvp = projection * view * model;
-        glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
-        glBindTexture(GL_TEXTURE_2D, portal2_target.texture);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal2.position), glm::vec3(scene->portal2.width, scene->portal2.height, 0.01f));
+            mvp = projection * view * model;
+            glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+            glBindTexture(GL_TEXTURE_2D, portal2_target.texture);
+            glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+        }
 
         // Draw debug cube
+        glEnable(GL_CULL_FACE);
         glUseProgram(standard_shader.program);
-        glBindVertexArray(primitives::cube->vao);
         if (debug_cube_xray) glClear(GL_DEPTH_BUFFER_BIT);
-        mvp = projection * view * glm::translate(debug_cube_transform, glm::vec3(-0.5f, -0.5f, -0.5f));
+        mvp = projection * view * debug_cube_transform;
         glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
         glUniform3f(standard_shader.u_color, 1.0f, 0.0f, 0.0f);
         glUniform1i(standard_shader.u_highlightfrontface, 1);
-        glDrawElements(GL_TRIANGLES, BRUSH_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
     }
 
     // Render everything to the screen (this includes the FBO pass)
@@ -213,14 +217,14 @@ namespace renderer {
         
         glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
         glEnable(GL_DEPTH_TEST);
-        render_scene(scene, p1cam.GetView(), projection);
+        render_scene(scene, p1cam.GetView(), projection, false);
 
         // Second portal target
         Camera p2cam = Camera(pcam_transform(cam, &scene->portal2, &scene->portal1));
         
         glBindFramebuffer(GL_FRAMEBUFFER, portal2_target.fbo);
         glEnable(GL_DEPTH_TEST);
-        render_scene(scene, p2cam.GetView(), projection);
+        render_scene(scene, p2cam.GetView(), projection, false);
 
         // Main target
         glBindFramebuffer(GL_FRAMEBUFFER, main_target.fbo);

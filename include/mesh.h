@@ -3,7 +3,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
-#define BRUSH_VERTEX_COUNT 36
+#define CUBE_VERTEX_COUNT 36
 
 #define POSITION_NORMAL 1
 #define POSITION_UV 2
