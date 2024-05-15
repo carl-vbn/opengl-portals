@@ -15,6 +15,7 @@ struct StandardShader {
 struct ScreenShader {
     GLuint program;
     GLuint u_screentex;
+    GLuint u_transform;
 };
 
 struct PortalShader {
@@ -39,4 +40,5 @@ namespace renderer {
     void render_screen(Scene* scene, Camera* cam);
 
     extern bool debug_cube_xray;
+    extern bool show_pcam_povs;
 }

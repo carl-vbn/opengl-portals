@@ -10,6 +10,9 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
+#define LOAD_SHADERPRG(struct_instance, dirname) struct_instance.program = load_shader("res/shaders/" dirname "/vertex.glsl", "res/shaders/" dirname "/fragment.glsl")
+#define LOCATE_UNIFORM(shader, uniform) shader.uniform = glGetUniformLocation(shader.program, #uniform)
+
 namespace renderer {
     StandardShader standard_shader;
     ScreenShader screen_shader;
@@ -19,6 +22,7 @@ namespace renderer {
     RenderTarget portal1_target, portal2_target;
     glm::mat4 debug_cube_transform(1.0f);
     bool debug_cube_xray = false;
+    bool show_pcam_povs = false;
 
     // Build an OpenGL Shader progam from a vertex shader and a fragment shader
     int load_shader(const char* vertex_path, const char* fragment_path) {
@@ -122,18 +126,19 @@ namespace renderer {
     }
 
     int setup(int scr_width, int scr_height, float fov) {
-        standard_shader.program = load_shader("res/shaders/standard/vertex.glsl", "res/shaders/standard/fragment.glsl");
-        standard_shader.u_MVP = glGetUniformLocation(standard_shader.program, "u_MVP");
-        standard_shader.u_color = glGetUniformLocation(standard_shader.program, "u_color");
-        standard_shader.u_lightdir = glGetUniformLocation(standard_shader.program, "u_lightdir");
-        standard_shader.u_highlightfrontface = glGetUniformLocation(standard_shader.program, "u_highlightfrontface");
+        LOAD_SHADERPRG(standard_shader, "standard");
+        LOCATE_UNIFORM(standard_shader, u_MVP);
+        LOCATE_UNIFORM(standard_shader, u_color);
+        LOCATE_UNIFORM(standard_shader, u_lightdir);
+        LOCATE_UNIFORM(standard_shader, u_highlightfrontface);
 
-        screen_shader.program = load_shader("res/shaders/screen/vertex.glsl", "res/shaders/screen/fragment.glsl");
-        screen_shader.u_screentex = glGetUniformLocation(screen_shader.program, "u_screentex");
+        LOAD_SHADERPRG(screen_shader, "screen");
+        LOCATE_UNIFORM(screen_shader, u_screentex);
+        LOCATE_UNIFORM(screen_shader, u_transform);
 
-        portal_shader.program = load_shader("res/shaders/portal/vertex.glsl", "res/shaders/portal/fragment.glsl");
-        portal_shader.u_rendertex = glGetUniformLocation(portal_shader.program, "u_rendertex");
-        portal_shader.u_MVP = glGetUniformLocation(portal_shader.program, "u_MVP");
+        LOAD_SHADERPRG(portal_shader, "portal");
+        LOCATE_UNIFORM(portal_shader, u_rendertex);
+        LOCATE_UNIFORM(portal_shader, u_MVP);
 
         projection = glm::perspective(fov, (float)scr_width/scr_height, 0.1f, 100.0f);
 
@@ -185,13 +190,13 @@ namespace renderer {
             glDisable(GL_CULL_FACE);
             glUseProgram(portal_shader.program);
             
-            model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal1.position), glm::vec3(scene->portal1.width, scene->portal1.height, 0.01f));
+            model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal1.position), glm::vec3(scene->portal1.width, scene->portal1.height, PORTAL_THICKNESS));
             mvp = projection * view * model;
             glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
             glBindTexture(GL_TEXTURE_2D, portal1_target.texture);
             glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
 
-            model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal2.position), glm::vec3(scene->portal2.width, scene->portal2.height, 0.01f));
+            model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal2.position), glm::vec3(scene->portal2.width, scene->portal2.height, PORTAL_THICKNESS));
             mvp = projection * view * model;
             glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
             glBindTexture(GL_TEXTURE_2D, portal2_target.texture);
@@ -237,7 +242,38 @@ namespace renderer {
         glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(screen_shader.program);
         glBindVertexArray(primitives::quad->vao);
+
+        // Main camera
         glBindTexture(GL_TEXTURE_2D, main_target.texture);
+        glUniformMatrix4fv(screen_shader.u_transform, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        if (show_pcam_povs) {
+            // P1 Camera
+            glBindTexture(GL_TEXTURE_2D, portal1_target.texture);
+            glUniformMatrix4fv(screen_shader.u_transform, 1, GL_FALSE, glm::value_ptr(
+                glm::scale(
+                    glm::translate(
+                        glm::mat4(1.0f),
+                        glm::vec3(0.75f, 0.75f, 0.0f)
+                    ),
+                    glm::vec3(0.25f)
+                )
+            ));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+            // P2 Camera
+            glBindTexture(GL_TEXTURE_2D, portal2_target.texture);
+            glUniformMatrix4fv(screen_shader.u_transform, 1, GL_FALSE, glm::value_ptr(
+                glm::scale(
+                    glm::translate(
+                        glm::mat4(1.0f),
+                        glm::vec3(0.75f, 0.25f, 0.0f)
+                    ),
+                    glm::vec3(0.25f)
+                )
+            ));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        }
     }
 }

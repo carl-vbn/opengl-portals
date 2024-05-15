@@ -13,7 +13,7 @@
 #include "mesh.h"
 #include "renderer.h"
 
-#define MOVEMENT_SPEED 0.01f
+#define MOVEMENT_SPEED 0.05f
 #define MOUSE_X_SENSITIVITY 0.1f
 #define MOUSE_Y_SENSITIVITY 0.1f
 
@@ -30,6 +30,7 @@ Scene scene;
 float lastx = 0.0f;
 float lasty = 0.0f;
 bool focused = false;
+bool pos_printed = false;
 
 int glfw_setup(GLFWwindow** window) {
     glfwInit();
@@ -77,7 +78,6 @@ int main()
     double previousTime = glfwGetTime();
     int frameCount = 0;
 
-
     while (!glfwWindowShouldClose(window))
     {
         // FPS Counter
@@ -115,28 +115,30 @@ void process_input(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
+    float speed_multiplier = glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS ? 0.2f : 1.0f; 
+
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        newPos += cam.GetForwardDirection() * MOVEMENT_SPEED;
+        newPos += cam.GetForwardDirection() * MOVEMENT_SPEED * speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        newPos -= cam.GetForwardDirection() * MOVEMENT_SPEED;
+        newPos -= cam.GetForwardDirection() * MOVEMENT_SPEED * speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        newPos += cam.GetRightDirection() * MOVEMENT_SPEED;
+        newPos += cam.GetRightDirection() * MOVEMENT_SPEED * speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        newPos -= cam.GetRightDirection() * MOVEMENT_SPEED;
+        newPos -= cam.GetRightDirection() * MOVEMENT_SPEED * speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        newPos.y += MOVEMENT_SPEED;
+        newPos.y += MOVEMENT_SPEED * speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        newPos.y -= MOVEMENT_SPEED;
+        newPos.y -= MOVEMENT_SPEED * speed_multiplier;
     }
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
@@ -149,9 +151,25 @@ void process_input(GLFWwindow *window)
         focused = false;
     }
 
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) { 
+        if (!pos_printed) {
+            PRINT_VEC3(cam.position);
+            if (is_in_portal(cam.position, &scene.portal1)) {
+                std::cout << "In portal 1" << std::endl;
+            }
+            if (is_in_portal(cam.position, &scene.portal2)) {
+                std::cout << "In portal 2" << std::endl;
+            }
+            pos_printed = true;
+        }
+    } else {
+        pos_printed = false;
+    }
+
     portal_aware_movement(&cam, newPos, &scene);
 
     renderer::debug_cube_xray = glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS;
+    renderer::show_pcam_povs = glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS;
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)

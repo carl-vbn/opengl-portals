@@ -120,13 +120,30 @@ bool find_portal_intersection(glm::vec3 start, glm::vec3 stop, Portal* portal, g
     return false;
 }
 
+inline glm::vec3 portal_min(Portal* portal) {
+    return portal->position - glm::vec3(portal->width, portal->height, PORTAL_THICKNESS);
+}
+
+inline glm::vec3 portal_max(Portal* portal) {
+    return portal->position + glm::vec3(portal->width, portal->height, PORTAL_THICKNESS);
+}
+
+bool is_in_portal(glm::vec3 point, Portal* portal) {
+    glm::vec3 min = portal_min(portal);
+    glm::vec3 max = portal_max(portal);
+
+    return point.x > min.x && point.y > min.y && point.z > min.z && point.x < max.x && point.y < max.y && point.z < max.z;
+}
+
 void portal_aware_movement(Camera* cam, glm::vec3 targetPos, Scene* scene) {
     glm::vec3 intersection;
     if (find_portal_intersection(cam->position, targetPos, &scene->portal1, &intersection)) {
         cam->SetTransform(pcam_transform(cam, &scene->portal1, &scene->portal2));
+        cam->position.z = scene->portal1.position.z + PORTAL_THICKNESS;
         std::cout << "P1 -> P2" << std::endl;
     } else if (find_portal_intersection(cam->position, targetPos, &scene->portal2, &intersection)) {
         cam->SetTransform(pcam_transform(cam, &scene->portal2, &scene->portal1));
+        cam->position.z = scene->portal2.position.z + PORTAL_THICKNESS;
         std::cout << "P2 -> P1" << std::endl;
     } else {
         cam->position = targetPos;

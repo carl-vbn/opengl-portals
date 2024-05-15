@@ -4,6 +4,8 @@
 
 #include "mesh.h"
 
+#define PORTAL_THICKNESS 0.01
+
 struct Brush
 {
     glm::vec3 min;
@@ -51,4 +53,5 @@ struct Camera {
 
 void load_scene_file(const char* path, Scene* scene);
 glm::mat4 pcam_transform(Camera* real_cam, Portal* portal, Portal* linked_portal);
+bool is_in_portal(glm::vec3 point, Portal* portal);
 void portal_aware_movement(Camera* cam, glm::vec3 targetPos, Scene* scene);
