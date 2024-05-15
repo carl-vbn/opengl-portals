@@ -4,7 +4,7 @@
 
 #include "mesh.h"
 
-#define PORTAL_THICKNESS 0.01
+#define PORTAL_THICKNESS 0.1
 
 struct Brush
 {

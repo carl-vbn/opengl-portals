@@ -190,13 +190,13 @@ namespace renderer {
             glDisable(GL_CULL_FACE);
             glUseProgram(portal_shader.program);
             
-            model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal1.position), glm::vec3(scene->portal1.width, scene->portal1.height, PORTAL_THICKNESS));
+            model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal1.position + glm::vec3(0.0f, 0.0f, -PORTAL_THICKNESS)), glm::vec3(scene->portal1.width, scene->portal1.height, PORTAL_THICKNESS));
             mvp = projection * view * model;
             glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
             glBindTexture(GL_TEXTURE_2D, portal1_target.texture);
             glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
 
-            model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal2.position), glm::vec3(scene->portal2.width, scene->portal2.height, PORTAL_THICKNESS));
+            model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal2.position + glm::vec3(0.0f, 0.0f, -PORTAL_THICKNESS)), glm::vec3(scene->portal2.width, scene->portal2.height, PORTAL_THICKNESS));
             mvp = projection * view * model;
             glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
             glBindTexture(GL_TEXTURE_2D, portal2_target.texture);
