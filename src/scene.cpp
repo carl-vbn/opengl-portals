@@ -139,11 +139,9 @@ void portal_aware_movement(Camera* cam, glm::vec3 targetPos, Scene* scene) {
     glm::vec3 intersection;
     if (find_portal_intersection(cam->position, targetPos, &scene->portal1, &intersection)) {
         cam->SetTransform(pcam_transform(cam, &scene->portal1, &scene->portal2));
-        cam->position.z = scene->portal1.position.z + PORTAL_THICKNESS;
         std::cout << "P1 -> P2" << std::endl;
     } else if (find_portal_intersection(cam->position, targetPos, &scene->portal2, &intersection)) {
         cam->SetTransform(pcam_transform(cam, &scene->portal2, &scene->portal1));
-        cam->position.z = scene->portal2.position.z + PORTAL_THICKNESS;
         std::cout << "P2 -> P1" << std::endl;
     } else {
         cam->position = targetPos;
