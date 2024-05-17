@@ -6,10 +6,13 @@
 
 struct StandardShader {
     GLuint program;
+    GLuint u_M;
     GLuint u_MVP;
     GLuint u_lightdir;
     GLuint u_color;
     GLuint u_highlightfrontface;
+    GLuint u_slicepos;
+    GLuint u_slicenormal;
 };
 
 struct ScreenShader {
@@ -36,7 +39,7 @@ namespace renderer {
     int load_shader(const char* vertex_path, const char* fragment_path);
     int gen_rendertarget(RenderTarget* target, int width, int height);
     void del_rendertarget(RenderTarget* target);
-    void render_scene(Scene* scene, glm::mat4 view, glm::mat4 projection, bool draw_portals);
+    void render_scene(Scene* scene, glm::mat4 view, glm::mat4 projection, bool draw_portals, glm::vec3 slice_pos, glm::vec3 slice_normal);
     void render_screen(Scene* scene, Camera* cam);
 
     extern bool debug_cube_xray;

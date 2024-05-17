@@ -127,10 +127,13 @@ namespace renderer {
 
     int setup(int scr_width, int scr_height, float fov) {
         LOAD_SHADERPRG(standard_shader, "standard");
+        LOCATE_UNIFORM(standard_shader, u_M);
         LOCATE_UNIFORM(standard_shader, u_MVP);
         LOCATE_UNIFORM(standard_shader, u_color);
         LOCATE_UNIFORM(standard_shader, u_lightdir);
         LOCATE_UNIFORM(standard_shader, u_highlightfrontface);
+        LOCATE_UNIFORM(standard_shader, u_slicepos);
+        LOCATE_UNIFORM(standard_shader, u_slicenormal);
 
         LOAD_SHADERPRG(screen_shader, "screen");
         LOCATE_UNIFORM(screen_shader, u_screentex);
@@ -160,7 +163,7 @@ namespace renderer {
     }
 
     // Render the specified scene from the specified POV
-    void render_scene(Scene* scene, glm::mat4 view, glm::mat4 projection, bool draw_portals=true) {
+    void render_scene(Scene* scene, glm::mat4 view, glm::mat4 projection, bool draw_portals=true, glm::vec3 slice_pos=glm::vec3(0.0f), glm::vec3 slice_normal=glm::vec3(0.0f)) {
         glm::mat4 model;
         glm::mat4 mvp;
 
@@ -173,6 +176,8 @@ namespace renderer {
 
         glUniform3f(standard_shader.u_lightdir, scene->light_dir.x, scene->light_dir.y, scene->light_dir.z);
         glUniform1i(standard_shader.u_highlightfrontface, 0);
+        glUniform3f(standard_shader.u_slicepos, slice_pos.x, slice_pos.y, slice_pos.z);
+        glUniform3f(standard_shader.u_slicenormal, slice_normal.x, slice_normal.y, slice_normal.z);
         for (size_t i = 0; i<scene->geometry.size(); i++) {
             Brush* brush = &scene->geometry[i];
             glm::vec3 half_size = (brush->max - brush->min) / 2.0f;
@@ -180,6 +185,7 @@ namespace renderer {
             model = glm::translate(model, brush->min + half_size);
             model = glm::scale(model, half_size);
             mvp = projection * view * model;
+            glUniformMatrix4fv(standard_shader.u_M, 1, GL_FALSE, glm::value_ptr(model));
             glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
             glUniform3f(standard_shader.u_color, brush->color.r, brush->color.g, brush->color.b);
             glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
@@ -222,14 +228,14 @@ namespace renderer {
         
         glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
         glEnable(GL_DEPTH_TEST);
-        render_scene(scene, p1cam.GetView(), projection, false);
+        render_scene(scene, p1cam.GetView(), projection, false, scene->portal2.position, scene->portal2.normal);
 
         // Second portal target
         Camera p2cam = Camera(pcam_transform(cam, &scene->portal2, &scene->portal1));
         
         glBindFramebuffer(GL_FRAMEBUFFER, portal2_target.fbo);
         glEnable(GL_DEPTH_TEST);
-        render_scene(scene, p2cam.GetView(), projection, false);
+        render_scene(scene, p2cam.GetView(), projection, false, scene->portal1.position, scene->portal1.normal);
 
         // Main target
         glBindFramebuffer(GL_FRAMEBUFFER, main_target.fbo);
