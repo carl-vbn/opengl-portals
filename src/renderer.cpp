@@ -141,6 +141,7 @@ namespace renderer {
 
         LOAD_SHADERPRG(portal_shader, "portal");
         LOCATE_UNIFORM(portal_shader, u_rendertex);
+        LOCATE_UNIFORM(portal_shader, u_color);
         LOCATE_UNIFORM(portal_shader, u_MVP);
 
         projection = glm::perspective(fov, (float)scr_width/scr_height, 0.1f, 100.0f);
@@ -199,25 +200,27 @@ namespace renderer {
             model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal1.position + glm::vec3(0.0f, 0.0f, -PORTAL_THICKNESS)), glm::vec3(scene->portal1.width, scene->portal1.height, PORTAL_THICKNESS));
             mvp = projection * view * model;
             glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+            glUniform3f(portal_shader.u_color, 0.0f, 1.0f, 1.0f);
             glBindTexture(GL_TEXTURE_2D, portal1_target.texture);
             glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
 
             model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal2.position + glm::vec3(0.0f, 0.0f, -PORTAL_THICKNESS)), glm::vec3(scene->portal2.width, scene->portal2.height, PORTAL_THICKNESS));
             mvp = projection * view * model;
             glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+            glUniform3f(portal_shader.u_color, 1.0f, 1.0f, 0.0f);
             glBindTexture(GL_TEXTURE_2D, portal2_target.texture);
             glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
         }
 
         // Draw debug cube
         glEnable(GL_CULL_FACE);
-        glUseProgram(standard_shader.program);
-        if (debug_cube_xray) glClear(GL_DEPTH_BUFFER_BIT);
-        mvp = projection * view * debug_cube_transform;
-        glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
-        glUniform3f(standard_shader.u_color, 1.0f, 0.0f, 0.0f);
-        glUniform1i(standard_shader.u_highlightfrontface, 1);
-        glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+        // glUseProgram(standard_shader.program);
+        // if (debug_cube_xray) glClear(GL_DEPTH_BUFFER_BIT);
+        // mvp = projection * view * debug_cube_transform;
+        // glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+        // glUniform3f(standard_shader.u_color, 1.0f, 0.0f, 0.0f);
+        // glUniform1i(standard_shader.u_highlightfrontface, 1);
+        // glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
     }
 
     // Render everything to the screen (this includes the FBO pass)
