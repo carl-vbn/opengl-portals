@@ -19,7 +19,8 @@
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn);
-void process_input(GLFWwindow *window);
+void process_input(GLFWwindow* window);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 800;
@@ -52,6 +53,7 @@ int glfw_setup(GLFWwindow** window) {
     glfwMakeContextCurrent(*window);
     glfwSetFramebufferSizeCallback(*window, framebuffer_size_callback);
     glfwSetCursorPosCallback(*window, cursor_pos_callback);
+    glfwSetMouseButtonCallback(*window, mouse_button_callback);
     // glfwSetInputMode(*window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -141,12 +143,6 @@ void process_input(GLFWwindow *window)
         newPos.y -= MOVEMENT_SPEED * speed_multiplier;
     }
 
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
-        focused = true;
-        lastx = 0.0f;
-        lasty = 0.0f;
-    }
-
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         focused = false;
     }
@@ -154,10 +150,10 @@ void process_input(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) { 
         if (!pos_printed) {
             PRINT_VEC3(cam.position);
-            if (is_in_portal(cam.position, &scene.portal1)) {
+            if (scene.portal1.open && is_in_portal(cam.position, &scene.portal1)) {
                 std::cout << "In portal 1" << std::endl;
             }
-            if (is_in_portal(cam.position, &scene.portal2)) {
+            if (scene.portal2.open && is_in_portal(cam.position, &scene.portal2)) {
                 std::cout << "In portal 2" << std::endl;
             }
             pos_printed = true;
@@ -203,4 +199,30 @@ void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
         cam.pitch = 89.0f;
     if (cam.pitch < -89.0f)
         cam.pitch = -89.0f;
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    if (action != GLFW_PRESS) return;
+
+    if (!focused) {
+        focused = true;
+        lastx = 0.0f;
+        lasty = 0.0f;
+
+        return;
+    }
+
+    glm::vec3 intersection;
+    glm::vec3 normal;
+    if (button == GLFW_MOUSE_BUTTON_1 && raycast(&cam, &scene, &intersection, &normal)) {
+        scene.portal1.open = true;
+        scene.portal1.position = intersection + normal * 0.001f;
+        scene.portal1.normal = normal;
+    }
+
+    if (button == GLFW_MOUSE_BUTTON_2 && raycast(&cam, &scene, &intersection, &normal)) {
+        scene.portal2.open = true;
+        scene.portal2.position = intersection + normal * 0.001f;
+        scene.portal2.normal = normal;
+    }
 }

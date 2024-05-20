@@ -89,13 +89,13 @@ namespace renderer {
         return shaderProgram;
     }
 
-    int gen_rendertarget(RenderTarget* target, int width, int height) {
+    int gen_rendertarget(RenderTarget* target, int width, int height, bool fpbuff=false) {
         glGenFramebuffers(1, &target->fbo);
         glBindFramebuffer(GL_FRAMEBUFFER, target->fbo);
 
         glGenTextures(1, &target->texture);
         glBindTexture(GL_TEXTURE_2D, target->texture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, fpbuff ? GL_RGBA16F : GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, target->texture, 0);
@@ -197,19 +197,23 @@ namespace renderer {
             glDisable(GL_CULL_FACE);
             glUseProgram(portal_shader.program);
             
-            model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal1.position + glm::vec3(0.0f, 0.0f, -PORTAL_THICKNESS)), glm::vec3(scene->portal1.width, scene->portal1.height, PORTAL_THICKNESS));
-            mvp = projection * view * model;
-            glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
-            glUniform3f(portal_shader.u_color, 0.0f, 1.0f, 1.0f);
-            glBindTexture(GL_TEXTURE_2D, portal1_target.texture);
-            glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+            if (scene->portal1.open) {
+                model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal1.position - scene->portal1.normal * PORTAL_THICKNESS) * portal_rotation(&scene->portal1), glm::vec3(scene->portal1.width, scene->portal1.height, PORTAL_THICKNESS));
+                mvp = projection * view * model;
+                glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+                glUniform3f(portal_shader.u_color, 0.0f, 1.0f, 1.0f);
+                glBindTexture(GL_TEXTURE_2D, scene->portal2.open ? portal1_target.texture : 0);
+                glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+            }
 
-            model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal2.position + glm::vec3(0.0f, 0.0f, -PORTAL_THICKNESS)), glm::vec3(scene->portal2.width, scene->portal2.height, PORTAL_THICKNESS));
-            mvp = projection * view * model;
-            glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
-            glUniform3f(portal_shader.u_color, 1.0f, 1.0f, 0.0f);
-            glBindTexture(GL_TEXTURE_2D, portal2_target.texture);
-            glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+            if (scene->portal2.open) {
+                model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal2.position - scene->portal2.normal * PORTAL_THICKNESS) * portal_rotation(&scene->portal2), glm::vec3(scene->portal2.width, scene->portal2.height, PORTAL_THICKNESS));
+                mvp = projection * view * model;
+                glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+                glUniform3f(portal_shader.u_color, 1.0f, 1.0f, 0.0f);
+                glBindTexture(GL_TEXTURE_2D, portal2_target.texture);
+                glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+            }
         }
 
         // Draw debug cube
@@ -225,20 +229,22 @@ namespace renderer {
 
     // Render everything to the screen (this includes the FBO pass)
     void render_screen(Scene* scene, Camera* cam) {        
-        // First portal target
-        Camera p1cam = Camera(pcam_transform(cam, &scene->portal1, &scene->portal2));
-        debug_cube_transform = p1cam.GetTransform();
-        
-        glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
-        glEnable(GL_DEPTH_TEST);
-        render_scene(scene, p1cam.GetView(), projection, false, scene->portal2.position, scene->portal2.normal);
+        if (scene->portal1.open && scene->portal2.open) {
+            // First portal target
+            Camera p1cam = Camera(pcam_transform(cam, &scene->portal1, &scene->portal2));
+            debug_cube_transform = p1cam.GetTransform();
+            
+            glBindFramebuffer(GL_FRAMEBUFFER, portal1_target.fbo);
+            glEnable(GL_DEPTH_TEST);
+            render_scene(scene, p1cam.GetView(), projection, false, scene->portal2.position, scene->portal2.normal);
 
-        // Second portal target
-        Camera p2cam = Camera(pcam_transform(cam, &scene->portal2, &scene->portal1));
-        
-        glBindFramebuffer(GL_FRAMEBUFFER, portal2_target.fbo);
-        glEnable(GL_DEPTH_TEST);
-        render_scene(scene, p2cam.GetView(), projection, false, scene->portal1.position, scene->portal1.normal);
+            // Second portal target
+            Camera p2cam = Camera(pcam_transform(cam, &scene->portal2, &scene->portal1));
+            
+            glBindFramebuffer(GL_FRAMEBUFFER, portal2_target.fbo);
+            glEnable(GL_DEPTH_TEST);
+            render_scene(scene, p2cam.GetView(), projection, false, scene->portal1.position, scene->portal1.normal);
+        }
 
         // Main target
         glBindFramebuffer(GL_FRAMEBUFFER, main_target.fbo);

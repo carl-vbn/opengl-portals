@@ -4,7 +4,7 @@
 
 #include "mesh.h"
 
-#define PORTAL_THICKNESS 0.1
+#define PORTAL_THICKNESS 0.1f
 
 struct Brush
 {
@@ -17,13 +17,14 @@ struct Brush
 };
 
 struct Portal {
+    bool open;
     glm::vec3 position;
     glm::vec3 normal;
     float width;
     float height;
 
-    Portal() : position(glm::vec3(0.0f)), normal(glm::vec3(0.0f)), width(0.0f), height(0.0f) {}
-    Portal(glm::vec3 position, glm::vec3 normal, float width, float height) : position(position), normal(normal), width(width), height(height) {}
+    Portal() : open(false), position(glm::vec3(0.0f)), normal(glm::vec3(0.0f)), width(0.0f), height(0.0f) {}
+    Portal(glm::vec3 position, glm::vec3 normal, float width, float height) : open(true), position(position), normal(normal), width(width), height(height) {}
 };
 
 struct Scene {
@@ -52,6 +53,8 @@ struct Camera {
 };
 
 void load_scene_file(const char* path, Scene* scene);
+glm::mat4 portal_rotation(Portal* portal);
 glm::mat4 pcam_transform(Camera* real_cam, Portal* portal, Portal* linked_portal);
 bool is_in_portal(glm::vec3 point, Portal* portal);
 void portal_aware_movement(Camera* cam, glm::vec3 targetPos, Scene* scene);
+bool raycast(Camera* cam, Scene* scene, glm::vec3* intersection, glm::vec3* normal);
