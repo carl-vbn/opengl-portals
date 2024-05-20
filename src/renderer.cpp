@@ -143,6 +143,8 @@ namespace renderer {
         LOCATE_UNIFORM(portal_shader, u_rendertex);
         LOCATE_UNIFORM(portal_shader, u_color);
         LOCATE_UNIFORM(portal_shader, u_MVP);
+        LOCATE_UNIFORM(portal_shader, u_outradius);
+        LOCATE_UNIFORM(portal_shader, u_inradius);
 
         projection = glm::perspective(fov, (float)scr_width/scr_height, 0.1f, 100.0f);
 
@@ -161,6 +163,24 @@ namespace renderer {
         del_rendertarget(&main_target);
         del_rendertarget(&portal1_target);
         del_rendertarget(&portal2_target);
+    }
+
+    void render_portal(Portal* portal, Scene* scene, glm::mat4 view, glm::vec3 color) {
+        glm::mat4 model = glm::scale(glm::translate(glm::mat4(1.0f), portal->position - portal->normal * PORTAL_THICKNESS) * portal_rotation(portal), glm::vec3(portal->width, portal->height, PORTAL_THICKNESS));
+        glm::mat4 mvp = projection * view * model;
+        glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+        glUniform3f(portal_shader.u_color, color.r, color.g, color.b);
+
+        float age = (float)scene->time - portal->spawn_time;
+        if (age > 1.0f) {
+            glUniform1f(portal_shader.u_outradius, 1.0f);
+            glUniform1f(portal_shader.u_inradius, 0.8f);
+        } else {
+            glUniform1f(portal_shader.u_outradius, 1.0f - glm::exp(-5.0f * age));
+            glUniform1f(portal_shader.u_inradius, 0.8f / (glm::exp(6.90675f - 16.0f * age) + 1.0f));
+        }
+        
+        glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
     }
 
     // Render the specified scene from the specified POV
@@ -198,33 +218,25 @@ namespace renderer {
             glUseProgram(portal_shader.program);
             
             if (scene->portal1.open) {
-                model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal1.position - scene->portal1.normal * PORTAL_THICKNESS) * portal_rotation(&scene->portal1), glm::vec3(scene->portal1.width, scene->portal1.height, PORTAL_THICKNESS));
-                mvp = projection * view * model;
-                glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
-                glUniform3f(portal_shader.u_color, 0.0f, 1.0f, 1.0f);
                 glBindTexture(GL_TEXTURE_2D, scene->portal2.open ? portal1_target.texture : 0);
-                glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+                render_portal(&scene->portal1, scene, view, glm::vec3(0.0f, 1.0f, 1.0f));
             }
 
             if (scene->portal2.open) {
-                model = glm::scale(glm::translate(glm::mat4(1.0f), scene->portal2.position - scene->portal2.normal * PORTAL_THICKNESS) * portal_rotation(&scene->portal2), glm::vec3(scene->portal2.width, scene->portal2.height, PORTAL_THICKNESS));
-                mvp = projection * view * model;
-                glUniformMatrix4fv(portal_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
-                glUniform3f(portal_shader.u_color, 1.0f, 1.0f, 0.0f);
-                glBindTexture(GL_TEXTURE_2D, portal2_target.texture);
-                glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+                glBindTexture(GL_TEXTURE_2D, scene->portal1.open ? portal2_target.texture : 0);
+                render_portal(&scene->portal2, scene, view, glm::vec3(1.0f, 1.0f, 0.0f));
             }
         }
 
         // Draw debug cube
         glEnable(GL_CULL_FACE);
-        // glUseProgram(standard_shader.program);
-        // if (debug_cube_xray) glClear(GL_DEPTH_BUFFER_BIT);
-        // mvp = projection * view * debug_cube_transform;
-        // glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
-        // glUniform3f(standard_shader.u_color, 1.0f, 0.0f, 0.0f);
-        // glUniform1i(standard_shader.u_highlightfrontface, 1);
-        // glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+        glUseProgram(standard_shader.program);
+        if (debug_cube_xray) glClear(GL_DEPTH_BUFFER_BIT);
+        mvp = projection * view * debug_cube_transform;
+        glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+        glUniform3f(standard_shader.u_color, 1.0f, 0.0f, 0.0f);
+        glUniform1i(standard_shader.u_highlightfrontface, 1);
+        glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
     }
 
     // Render everything to the screen (this includes the FBO pass)

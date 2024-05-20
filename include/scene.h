@@ -18,12 +18,13 @@ struct Brush
 
 struct Portal {
     bool open;
+    float spawn_time;
     glm::vec3 position;
     glm::vec3 normal;
     float width;
     float height;
 
-    Portal() : open(false), position(glm::vec3(0.0f)), normal(glm::vec3(0.0f)), width(0.0f), height(0.0f) {}
+    Portal() : open(false), spawn_time(0.0f), position(glm::vec3(0.0f)), normal(glm::vec3(0.0f)), width(0.0f), height(0.0f) {}
     Portal(glm::vec3 position, glm::vec3 normal, float width, float height) : open(true), position(position), normal(normal), width(width), height(height) {}
 };
 

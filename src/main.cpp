@@ -216,12 +216,14 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     glm::vec3 normal;
     if (button == GLFW_MOUSE_BUTTON_1 && raycast(&cam, &scene, &intersection, &normal)) {
         scene.portal1.open = true;
+        scene.portal1.spawn_time = scene.time;
         scene.portal1.position = intersection + normal * 0.001f;
         scene.portal1.normal = normal;
     }
 
     if (button == GLFW_MOUSE_BUTTON_2 && raycast(&cam, &scene, &intersection, &normal)) {
         scene.portal2.open = true;
+        scene.portal2.spawn_time = scene.time;
         scene.portal2.position = intersection + normal * 0.001f;
         scene.portal2.normal = normal;
     }

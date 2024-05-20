@@ -26,6 +26,8 @@ struct PortalShader {
     GLuint u_rendertex;
     GLuint u_MVP;
     GLuint u_color;
+    GLuint u_outradius;
+    GLuint u_inradius;
 };
 
 struct RenderTarget {
