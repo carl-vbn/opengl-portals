@@ -89,7 +89,7 @@ namespace renderer {
         return shaderProgram;
     }
 
-    int gen_rendertarget(RenderTarget* target, int width, int height, bool fpbuff=false) {
+    int gen_rendertarget(RenderTarget* target, int width, int height, bool fpbuff) {
         glGenFramebuffers(1, &target->fbo);
         glBindFramebuffer(GL_FRAMEBUFFER, target->fbo);
 

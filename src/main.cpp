@@ -201,6 +201,51 @@ void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
         cam.pitch = -89.0f;
 }
 
+bool place_portal(Portal* portal, RaycastHitInfo* hit_info) {
+    glm::vec3 A;
+    glm::vec3 B;
+
+    if (glm::abs(1.0f - glm::abs(glm::dot(hit_info->normal, glm::vec3(1,0,0)))) < 0.001) {
+        // Normal is x-aligned
+        A = glm::vec3(0,1,0);
+        B = glm::vec3(0,0,1);
+    } else if (glm::abs(1.0f - glm::abs(glm::dot(hit_info->normal, glm::vec3(0,1,0)))) < 0.001) {
+        // Normal is y-aligned
+        A = glm::vec3(1,0,0);
+        B = glm::vec3(0,0,1);
+    } else if (glm::abs(1.0f - glm::abs(glm::dot(hit_info->normal, glm::vec3(0,0,1)))) < 0.001) {
+        // Normal is z-aligned
+        A = glm::vec3(1,0,0);
+        B = glm::vec3(0,1,0);
+    } else {
+        assert(false);
+    }
+
+    glm::vec3 x = hit_info->intersection - hit_info->face_min;
+    glm::vec3 x_max = hit_info->face_max - hit_info->face_min;
+    float u = glm::dot(A,x);
+    float v = glm::dot(B,x);
+
+    float u_max = glm::dot(A, x_max);
+    float v_max = glm::dot(B, x_max);
+
+    if (u_max < portal->width * 2.0f || v_max < portal->height * 2.0f) {
+        return false; // Face is too small
+    }
+
+    float u_corrected = glm::min(glm::max(u, portal->width), u_max - portal->width);
+    float v_corrected = glm::min(glm::max(v, portal->height), v_max - portal->height);
+
+    glm::vec3 corrected_pos = hit_info->face_min + A * u_corrected + B * v_corrected;
+
+    portal->position = corrected_pos + hit_info->normal * 0.001f;
+    portal->normal = hit_info->normal;
+    portal->spawn_time = scene.time;
+    portal->open = true;
+
+    return true;
+}
+
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (action != GLFW_PRESS) return;
 
@@ -212,19 +257,12 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         return;
     }
 
-    glm::vec3 intersection;
-    glm::vec3 normal;
-    if (button == GLFW_MOUSE_BUTTON_1 && raycast(&cam, &scene, &intersection, &normal)) {
-        scene.portal1.open = true;
-        scene.portal1.spawn_time = scene.time;
-        scene.portal1.position = intersection + normal * 0.001f;
-        scene.portal1.normal = normal;
+    RaycastHitInfo hit_info;
+    if (button == GLFW_MOUSE_BUTTON_1 && raycast(&cam, &scene, &hit_info)) {
+        place_portal(&scene.portal1, &hit_info);
     }
 
-    if (button == GLFW_MOUSE_BUTTON_2 && raycast(&cam, &scene, &intersection, &normal)) {
-        scene.portal2.open = true;
-        scene.portal2.spawn_time = scene.time;
-        scene.portal2.position = intersection + normal * 0.001f;
-        scene.portal2.normal = normal;
+    if (button == GLFW_MOUSE_BUTTON_2 && raycast(&cam, &scene, &hit_info)) {
+        place_portal(&scene.portal2, &hit_info);
     }
 }

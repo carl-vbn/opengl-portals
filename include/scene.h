@@ -53,9 +53,16 @@ struct Camera {
     void SetTransform(glm::mat4 transform);
 };
 
+struct RaycastHitInfo {
+    glm::vec3 intersection;
+    glm::vec3 normal;
+    glm::vec3 face_min;
+    glm::vec3 face_max;
+};
+
 void load_scene_file(const char* path, Scene* scene);
 glm::mat4 portal_rotation(Portal* portal);
 glm::mat4 pcam_transform(Camera* real_cam, Portal* portal, Portal* linked_portal);
 bool is_in_portal(glm::vec3 point, Portal* portal);
 void portal_aware_movement(Camera* cam, glm::vec3 targetPos, Scene* scene);
-bool raycast(Camera* cam, Scene* scene, glm::vec3* intersection, glm::vec3* normal);
+bool raycast(Camera* cam, Scene* scene, RaycastHitInfo* hit_info);

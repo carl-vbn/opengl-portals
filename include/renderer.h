@@ -40,7 +40,7 @@ namespace renderer {
     int setup(int scr_width, int scr_height, float fov);
     void dispose();
     int load_shader(const char* vertex_path, const char* fragment_path);
-    int gen_rendertarget(RenderTarget* target, int width, int height, bool fpbuff);
+    int gen_rendertarget(RenderTarget* target, int width, int height, bool fpbuff=false);
     void del_rendertarget(RenderTarget* target);
     void render_scene(Scene* scene, glm::mat4 view, glm::mat4 projection, bool draw_portals, glm::vec3 slice_pos, glm::vec3 slice_normal);
     void render_screen(Scene* scene, Camera* cam);

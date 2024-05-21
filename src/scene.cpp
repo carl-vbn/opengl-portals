@@ -155,7 +155,7 @@ void portal_aware_movement(Camera* cam, glm::vec3 targetPos, Scene* scene) {
 }
 
 // Adapted from https://web.archive.org/web/20090803054252/http://tog.acm.org/resources/GraphicsGems/gems/RayBox.c
-bool intersect_AABB(glm::vec3 minB, glm::vec3 maxB, glm::vec3 origin, glm::vec3 dir, glm::vec3* intersection, glm::vec3* normal)
+bool intersect_AABB(glm::vec3 minB, glm::vec3 maxB, glm::vec3 origin, glm::vec3 dir, glm::vec3* intersection, glm::vec3* normal, glm::vec3* face_min, glm::vec3* face_max)
 {
     bool inside = true;
     char quadrant[3];
@@ -167,7 +167,7 @@ bool intersect_AABB(glm::vec3 minB, glm::vec3 maxB, glm::vec3 origin, glm::vec3 
 
     /* Find candidate planes; this loop can be avoided if
     rays cast all from the eye(assume perpsective view) */
-    for (i=0; i<3; i++)
+    for (i = 0; i < 3; i++) {
         if (origin[i] < minB[i]) {
             quadrant[i] = 1;
             candidatePlane[i] = minB[i];
@@ -179,6 +179,7 @@ bool intersect_AABB(glm::vec3 minB, glm::vec3 maxB, glm::vec3 origin, glm::vec3 
         } else {
             quadrant[i] = 2;
         }
+    }
 
     /* Ray origin inside bounding box */
     if (inside) {
@@ -187,21 +188,23 @@ bool intersect_AABB(glm::vec3 minB, glm::vec3 maxB, glm::vec3 origin, glm::vec3 
     }
 
     /* Calculate T distances to candidate planes */
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < 3; i++) {
         if (quadrant[i] != 2 && dir[i] != 0.0f)
             maxT[i] = (candidatePlane[i] - origin[i]) / dir[i];
         else
             maxT[i] = -1.0f;
+    }
 
     /* Get largest of the maxT's for final choice of intersection */
     whichPlane = 0;
-    for (i = 1; i < 3; i++)
+    for (i = 1; i < 3; i++) {
         if (maxT[whichPlane] < maxT[i])
             whichPlane = i;
+    }
 
     /* Check final candidate actually inside box */
     if (maxT[whichPlane] < 0.0f) return false;
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < 3; i++) {
         if (whichPlane != i) {
             coord[i] = origin[i] + maxT[whichPlane] * dir[i];
             if (coord[i] < minB[i] || coord[i] > maxB[i])
@@ -209,41 +212,73 @@ bool intersect_AABB(glm::vec3 minB, glm::vec3 maxB, glm::vec3 origin, glm::vec3 
         } else {
             coord[i] = candidatePlane[i];
         }
+    }
 
     *intersection = glm::vec3(coord[0], coord[1], coord[2]);
 
     // Determine the normal of the hit surface
     glm::vec3 hitNormal(0.0f, 0.0f, 0.0f);
+    glm::vec3 hitFace_min(minB);
+    glm::vec3 hitFace_max(maxB);
     if (whichPlane == 0) {
         hitNormal.x = (quadrant[0] == 1) ? -1.0f : 1.0f;
+        if (quadrant[0] == 1) {
+            hitFace_min.x = minB.x;
+            hitFace_max.x = minB.x;
+        } else {
+            hitFace_min.x = maxB.x;
+            hitFace_max.x = maxB.x;
+        }
     } else if (whichPlane == 1) {
         hitNormal.y = (quadrant[1] == 1) ? -1.0f : 1.0f;
+        if (quadrant[1] == 1) {
+            hitFace_min.y = minB.y;
+            hitFace_max.y = minB.y;
+        } else {
+            hitFace_min.y = maxB.y;
+            hitFace_max.y = maxB.y;
+        }
     } else if (whichPlane == 2) {
         hitNormal.z = (quadrant[2] == 1) ? -1.0f : 1.0f;
+        if (quadrant[2] == 1) {
+            hitFace_min.z = minB.z;
+            hitFace_max.z = minB.z;
+        } else {
+            hitFace_min.z = maxB.z;
+            hitFace_max.z = maxB.z;
+        }
     }
 
     *normal = hitNormal;
+    *face_min = hitFace_min;
+    *face_max = hitFace_max;
 
     return true; /* ray hits box */
 }
 
-bool raycast(Camera* cam, Scene* scene, glm::vec3* intersection, glm::vec3* normal) {
+bool raycast(Camera* cam, Scene* scene, RaycastHitInfo* hit_info) {
     bool hit = false;
     for (size_t brush_index = 0; brush_index < scene->geometry.size(); brush_index++) {
         Brush* brush = &scene->geometry[brush_index];
 
         glm::vec3 brush_intersection;
         glm::vec3 brush_normal;
-        if (intersect_AABB(brush->min, brush->max, cam->position, cam->GetForwardDirection(), &brush_intersection, &brush_normal)) {
+        glm::vec3 brush_face_min;
+        glm::vec3 brush_face_max;
+        if (intersect_AABB(brush->min, brush->max, cam->position, cam->GetForwardDirection(), &brush_intersection, &brush_normal, &brush_face_min, &brush_face_max)) {
             if (hit) {
-                if (glm::distance(cam->position, brush_intersection) < glm::distance(cam->position, *intersection)) {
-                    *intersection = brush_intersection;
-                    *normal = brush_normal;
+                if (glm::distance(cam->position, brush_intersection) < glm::distance(cam->position, hit_info->intersection)) {
+                    hit_info->intersection = brush_intersection;
+                    hit_info->normal = brush_normal;
+                    hit_info->face_min = brush_face_min;
+                    hit_info->face_max = brush_face_max;
                 }
             } else {
                 hit = true;
-                *intersection = brush_intersection;
-                *normal = brush_normal;
+                hit_info->intersection = brush_intersection;
+                hit_info->normal = brush_normal;
+                hit_info->face_min = brush_face_min;
+                hit_info->face_max = brush_face_max;
             }
         }
     }
