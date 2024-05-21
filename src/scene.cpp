@@ -97,30 +97,8 @@ glm::mat4 Camera::GetTransform() {
     return translationMatrix * rotationMatrix;
 }
 
-// Adapted from https://stackoverflow.com/a/67424918
 glm::mat4 portal_rotation(Portal* portal) {
-    glm::vec3 from(0, 0, 1);
-    glm::vec3 to = portal->normal;
-
-    glm::vec3 v = glm::cross(to, from);
-    float angle = glm::acos(glm::dot(to, from) / (glm::length(to) * glm::length(from)));
-    glm::mat4 rotmat = glm::rotate(glm::mat4(1.0f), -angle, v); // Added the minus sign, idk why it's necessary
-
-    // special cases lead to NaN values in the rotation matrix
-    if (glm::any(glm::isnan(rotmat * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)))) {
-        if (angle < 0.1f) {
-            rotmat = glm::mat4(1.0f);
-        }
-        else if (angle > 3.1f) {
-            // rotate about any perpendicular vector
-            rotmat = glm::rotate(glm::mat4(1.0f), angle, glm::cross(from, glm::vec3(from.y, from.z, from.x)));
-        }
-        else {
-            assert(false);
-        }
-    }
-
-    return rotmat;
+    return glm::eulerAngleYX(glm::atan(portal->normal.x, portal->normal.z), glm::asin(-portal->normal.y));
 }
 
 glm::mat4 pcam_transform(Camera* real_cam, Portal* portal, Portal* linked_portal) {

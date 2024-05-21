@@ -226,17 +226,17 @@ namespace renderer {
                 glBindTexture(GL_TEXTURE_2D, scene->portal1.open ? portal2_target.texture : 0);
                 render_portal(&scene->portal2, scene, view, glm::vec3(1.0f, 1.0f, 0.0f));
             }
+            glEnable(GL_CULL_FACE);
         }
 
         // Draw debug cube
-        glEnable(GL_CULL_FACE);
-        glUseProgram(standard_shader.program);
-        if (debug_cube_xray) glClear(GL_DEPTH_BUFFER_BIT);
-        mvp = projection * view * debug_cube_transform;
-        glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
-        glUniform3f(standard_shader.u_color, 1.0f, 0.0f, 0.0f);
-        glUniform1i(standard_shader.u_highlightfrontface, 1);
-        glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+        // glUseProgram(standard_shader.program);
+        // if (debug_cube_xray) glClear(GL_DEPTH_BUFFER_BIT);
+        // mvp = projection * view * debug_cube_transform;
+        // glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+        // glUniform3f(standard_shader.u_color, 1.0f, 0.0f, 0.0f);
+        // glUniform1i(standard_shader.u_highlightfrontface, 1);
+        // glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
     }
 
     // Render everything to the screen (this includes the FBO pass)
