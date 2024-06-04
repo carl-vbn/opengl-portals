@@ -162,7 +162,7 @@ void process_input(GLFWwindow *window)
         pos_printed = false;
     }
 
-    portal_aware_movement(&cam, newPos, &scene);
+    scene_aware_movement(&cam, newPos, &scene);
 
     renderer::debug_cube_xray = glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS;
     renderer::show_pcam_povs = glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS;
@@ -206,15 +206,15 @@ bool place_portal(Portal* portal, RaycastHitInfo* hit_info) {
     glm::vec3 B;
 
     if (glm::abs(1.0f - glm::abs(glm::dot(hit_info->normal, glm::vec3(1,0,0)))) < 0.001) {
-        // Normal is x-aligned
+        // Normal is parallel to x-axis
         A = glm::vec3(0,1,0);
         B = glm::vec3(0,0,1);
     } else if (glm::abs(1.0f - glm::abs(glm::dot(hit_info->normal, glm::vec3(0,1,0)))) < 0.001) {
-        // Normal is y-aligned
+        // Normal is parallel to y-axis
         A = glm::vec3(1,0,0);
         B = glm::vec3(0,0,1);
     } else if (glm::abs(1.0f - glm::abs(glm::dot(hit_info->normal, glm::vec3(0,0,1)))) < 0.001) {
-        // Normal is z-aligned
+        // Normal is parallel to z-axis
         A = glm::vec3(1,0,0);
         B = glm::vec3(0,1,0);
     } else {

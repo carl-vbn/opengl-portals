@@ -16,6 +16,9 @@ default: program
 program: $(OBJ)
 	$(CXX) $(LDFLAGS) $(OBJ) $(LDLIBS) -o $@
 
+$(OBJ_PATH)/%.o: $(SRC_PATH)/%.c* $(INCLUDE_PATH)/%.h
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 

@@ -1,5 +1,8 @@
 #include "scene.h"
 
+#include <algorithm>
+#include <initializer_list>
+#include <limits>
 #include <fstream>
 #include <vector>
 #include <iostream>
@@ -140,17 +143,19 @@ bool is_in_portal(glm::vec3 point, Portal* portal) {
     return point.x > min.x && point.y > min.y && point.z > min.z && point.x < max.x && point.y < max.y && point.z < max.z;
 }
 
-void portal_aware_movement(Camera* cam, glm::vec3 targetPos, Scene* scene) {
+bool handle_portal_movement(Camera* cam, glm::vec3 target_pos, Scene* scene) {
     glm::vec3 intersection;
     bool both_portals_open = scene->portal1.open && scene->portal2.open;
-    if (both_portals_open && find_portal_intersection(cam->position, targetPos, &scene->portal1, &intersection)) {
+    if (both_portals_open && find_portal_intersection(cam->position, target_pos, &scene->portal1, &intersection)) {
         cam->SetTransform(pcam_transform(cam, &scene->portal1, &scene->portal2));
         std::cout << "P1 -> P2" << std::endl;
-    } else if (both_portals_open && find_portal_intersection(cam->position, targetPos, &scene->portal2, &intersection)) {
+        return true;
+    } else if (both_portals_open && find_portal_intersection(cam->position, target_pos, &scene->portal2, &intersection)) {
         cam->SetTransform(pcam_transform(cam, &scene->portal2, &scene->portal1));
         std::cout << "P2 -> P1" << std::endl;
+        return true;
     } else {
-        cam->position = targetPos;
+        return false;
     }
 }
 
@@ -284,4 +289,93 @@ bool raycast(Camera* cam, Scene* scene, RaycastHitInfo* hit_info) {
     }
 
     return hit;
+}
+
+bool check_aabb_intersection(glm::vec3 a_min, glm::vec3 a_max, glm::vec3 b_min, glm::vec3 b_max) {
+    return (
+        a_min.x <= b_max.x &&
+        a_max.x >= b_min.x &&
+        a_min.y <= b_max.y &&
+        a_max.y >= b_min.y &&
+        a_min.z <= b_max.z &&
+        a_max.z >= b_min.z
+    );
+}
+
+// Checks if the AABB would collide with the brush if it was to be translated. Returns true and sets the hit_normal if a collision is detected.
+bool aabb_brush_collision(glm::vec3 aabb_min, glm::vec3 aabb_max, glm::vec3 translation, Brush* brush, glm::vec3* hit_normal) {
+    // Calculate the translated AABB
+    glm::vec3 translated_min = aabb_min + translation;
+    glm::vec3 translated_max = aabb_max + translation;
+    
+    // Check if there is a collision
+    bool collision = (translated_min.x <= brush->max.x && translated_max.x >= brush->min.x) &&
+                     (translated_min.y <= brush->max.y && translated_max.y >= brush->min.y) &&
+                     (translated_min.z <= brush->max.z && translated_max.z >= brush->min.z);
+
+    if (!collision) {
+        return false;
+    }
+    
+    // Determine the hit normal
+    glm::vec3 overlap_min = glm::max(translated_min, brush->min);
+    glm::vec3 overlap_max = glm::min(translated_max, brush->max);
+    glm::vec3 overlap_size = overlap_max - overlap_min;
+
+    if (overlap_size.x < overlap_size.y && overlap_size.x < overlap_size.z) {
+        if (translated_max.x > brush->min.x && translated_min.x < brush->min.x) {
+            *hit_normal = glm::vec3(-1, 0, 0);  // Collision on the left face of the brush
+        } else {
+            *hit_normal = glm::vec3(1, 0, 0);   // Collision on the right face of the brush
+        }
+    } else if (overlap_size.y < overlap_size.x && overlap_size.y < overlap_size.z) {
+        if (translated_max.y > brush->min.y && translated_min.y < brush->min.y) {
+            *hit_normal = glm::vec3(0, -1, 0);  // Collision on the bottom face of the brush
+        } else {
+            *hit_normal = glm::vec3(0, 1, 0);   // Collision on the top face of the brush
+        }
+    } else {
+        if (translated_max.z > brush->min.z && translated_min.z < brush->min.z) {
+            *hit_normal = glm::vec3(0, 0, -1);  // Collision on the front face of the brush
+        } else {
+            *hit_normal = glm::vec3(0, 0, 1);   // Collision on the back face of the brush
+        }
+    }
+
+    return true;
+}
+
+bool portal_aabb_collision_test(Portal* portal, glm::vec3 max, glm::vec3 min) {
+    glm::vec3 portal_pos = portal->position;
+    if (glm::abs(1.0f - glm::abs(glm::dot(portal->normal, glm::vec3(1,0,0)))) < 0.001) {
+        // Portal normal is parallel to x-axis
+        return portal_pos.y - portal->height <= min.y && portal_pos.y + portal->height >= max.y && portal_pos.z - portal->width <= min.z && portal_pos.z + portal->width >= max.z;
+    } else if (glm::abs(1.0f - glm::abs(glm::dot(portal->normal, glm::vec3(0,1,0)))) < 0.001) {
+        // Portal normal is parallel to y-axis
+        return portal_pos.x - portal->width <= min.x && portal_pos.x + portal->width >= max.x && portal_pos.z - portal->height <= min.z && portal_pos.z + portal->height >= max.z;
+    } else if (glm::abs(1.0f - glm::abs(glm::dot(portal->normal, glm::vec3(0,0,1)))) < 0.001) {
+        // Portal normal is parallel to z-axis
+        return portal_pos.x - portal->width <= min.x && portal_pos.x + portal->width >= max.x && portal_pos.y - portal->height <= min.y && portal_pos.y + portal->height >= max.y;
+    } else {
+        assert(false);
+    }
+}
+
+// Move the camera while handling collision and portal teleportation
+void scene_aware_movement(Camera* cam, glm::vec3 target_pos, Scene* scene) {
+    // First run the portal logic
+    // This will teleport the camera if it is moving through a portal
+    if (!handle_portal_movement(cam, target_pos, scene)) {
+        // If the portal logic did not move the camera, we do a collision check
+        for (size_t brush_index = 0; brush_index < scene->geometry.size(); brush_index++) {
+            Brush* brush = &scene->geometry[brush_index];
+            glm::vec3 hit_normal;
+            if (aabb_brush_collision(cam->position-glm::vec3(0.05f), cam->position+glm::vec3(0.05f), target_pos-cam->position, brush, &hit_normal)) {
+                return;
+            }
+        }
+
+        // If no collision is detected, just move the camera
+        cam->position = target_pos;
+    }
 }

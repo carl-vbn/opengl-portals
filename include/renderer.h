@@ -2,8 +2,6 @@
 
 #include "scene.h"
 
-#define PRINT_VEC3(vec3) std::cout << (vec3).x << " " << (vec3).y << " " << (vec3).z << std::endl
-
 struct StandardShader {
     GLuint program;
     GLuint u_M;
