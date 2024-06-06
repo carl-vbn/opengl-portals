@@ -7,8 +7,7 @@
 #define PORTAL_THICKNESS 0.1f
 #define PRINT_VEC3(vec3) std::cout << (vec3).x << " " << (vec3).y << " " << (vec3).z << std::endl
 
-struct Brush
-{
+struct Brush {
     glm::vec3 min;
     glm::vec3 max;
 
@@ -24,6 +23,7 @@ struct Portal {
     glm::vec3 normal;
     float width;
     float height;
+    Brush* brush;
 
     Portal() : open(false), spawn_time(0.0f), position(glm::vec3(0.0f)), normal(glm::vec3(0.0f)), width(0.0f), height(0.0f) {}
     Portal(glm::vec3 position, glm::vec3 normal, float width, float height) : open(true), position(position), normal(normal), width(width), height(height) {}
@@ -59,6 +59,7 @@ struct RaycastHitInfo {
     glm::vec3 normal;
     glm::vec3 face_min;
     glm::vec3 face_max;
+    Brush* brush;
 };
 
 /** General **/

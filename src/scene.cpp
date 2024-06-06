@@ -277,6 +277,7 @@ bool raycast(Camera* cam, Scene* scene, RaycastHitInfo* hit_info) {
                     hit_info->normal = brush_normal;
                     hit_info->face_min = brush_face_min;
                     hit_info->face_max = brush_face_max;
+                    hit_info->brush = brush;
                 }
             } else {
                 hit = true;
@@ -284,6 +285,7 @@ bool raycast(Camera* cam, Scene* scene, RaycastHitInfo* hit_info) {
                 hit_info->normal = brush_normal;
                 hit_info->face_min = brush_face_min;
                 hit_info->face_max = brush_face_max;
+                hit_info->brush = brush;
             }
         }
     }
@@ -370,6 +372,12 @@ void scene_aware_movement(Camera* cam, glm::vec3 target_pos, Scene* scene) {
         glm::vec3 translation = target_pos-cam->position;
         for (size_t brush_index = 0; brush_index < scene->geometry.size(); brush_index++) {
             Brush* brush = &scene->geometry[brush_index];
+
+            // Check if a portal is on this brush
+            if (scene->portal1.brush == brush || scene->portal2.brush == brush) {
+                continue;
+            }
+
             glm::vec3 hit_normal;
             if (aabb_brush_collision(cam->position-glm::vec3(0.1f, 1.86f, 0.1), cam->position+glm::vec3(0.1f), translation, brush, &hit_normal)) {
                 glm::vec3 projection = glm::dot(hit_normal, translation) * hit_normal;

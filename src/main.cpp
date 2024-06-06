@@ -242,6 +242,7 @@ bool place_portal(Portal* portal, RaycastHitInfo* hit_info) {
     portal->position = corrected_pos + hit_info->normal * 0.001f;
     portal->normal = hit_info->normal;
     portal->spawn_time = scene.time;
+    portal->brush = hit_info->brush;
     portal->open = true;
 
     return true;
