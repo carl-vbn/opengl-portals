@@ -13,13 +13,13 @@
 #include "mesh.h"
 #include "renderer.h"
 
-#define MOVEMENT_SPEED 0.05f
+#define MOVEMENT_SPEED 7.0f
 #define MOUSE_X_SENSITIVITY 0.1f
 #define MOUSE_Y_SENSITIVITY 0.1f
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn);
-void process_input(GLFWwindow* window);
+void process_input(GLFWwindow* window, double deltaTime);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 
 const unsigned int SCR_WIDTH = 800;
@@ -77,13 +77,14 @@ int main()
 
     load_scene_file("res/scene.bin", &scene);
 
-    double previousTime = glfwGetTime();
+    double previousTime = glfwGetTime(); // Used for FPS counter, not refreshed every frame
     int frameCount = 0;
 
     while (!glfwWindowShouldClose(window))
     {
         // FPS Counter
         double time = glfwGetTime();
+        double deltaTime = time - scene.time;
         scene.time = time;
         frameCount++;
         if (time - previousTime >= 2.0)
@@ -96,7 +97,7 @@ int main()
             previousTime = time;
         }
 
-        process_input(window);
+        process_input(window, deltaTime);
 
         renderer::render_screen(&scene, &cam);
  
@@ -111,36 +112,36 @@ int main()
     return 0;
 }
 
-void process_input(GLFWwindow *window)
+void process_input(GLFWwindow *window, double deltaTime)
 {
     glm::vec3 newPos = cam.position;
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    float speed_multiplier = glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS ? 0.2f : 1.0f; 
+    float speed_multiplier = deltaTime * MOVEMENT_SPEED * (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS ? 0.2f : 1.0f); 
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        newPos += cam.GetForwardDirection() * MOVEMENT_SPEED * speed_multiplier;
+        newPos += cam.GetForwardDirection() * speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        newPos -= cam.GetForwardDirection() * MOVEMENT_SPEED * speed_multiplier;
+        newPos -= cam.GetForwardDirection() * speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        newPos += cam.GetRightDirection() * MOVEMENT_SPEED * speed_multiplier;
+        newPos += cam.GetRightDirection() * speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        newPos -= cam.GetRightDirection() * MOVEMENT_SPEED * speed_multiplier;
+        newPos -= cam.GetRightDirection() * speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        newPos.y += MOVEMENT_SPEED * speed_multiplier;
+        newPos.y += speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        newPos.y -= MOVEMENT_SPEED * speed_multiplier;
+        newPos.y -= speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {

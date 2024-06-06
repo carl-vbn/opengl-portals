@@ -367,15 +367,17 @@ void scene_aware_movement(Camera* cam, glm::vec3 target_pos, Scene* scene) {
     // This will teleport the camera if it is moving through a portal
     if (!handle_portal_movement(cam, target_pos, scene)) {
         // If the portal logic did not move the camera, we do a collision check
+        glm::vec3 translation = target_pos-cam->position;
         for (size_t brush_index = 0; brush_index < scene->geometry.size(); brush_index++) {
             Brush* brush = &scene->geometry[brush_index];
             glm::vec3 hit_normal;
-            if (aabb_brush_collision(cam->position-glm::vec3(0.05f), cam->position+glm::vec3(0.05f), target_pos-cam->position, brush, &hit_normal)) {
-                return;
+            if (aabb_brush_collision(cam->position-glm::vec3(0.1f, 1.86f, 0.1), cam->position+glm::vec3(0.1f), translation, brush, &hit_normal)) {
+                glm::vec3 projection = glm::dot(hit_normal, translation) * hit_normal;
+                translation = translation - projection;
             }
         }
 
         // If no collision is detected, just move the camera
-        cam->position = target_pos;
+        cam->position += translation;
     }
 }
