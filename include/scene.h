@@ -46,6 +46,7 @@ struct Camera {
     Camera(glm::mat4 transform);
 
     glm::vec3 GetForwardDirection();
+    glm::vec3 GetPitchlessForwardDirection();
     glm::vec3 GetRightDirection();
 
     glm::mat4 GetView();
@@ -74,4 +75,4 @@ bool is_in_portal(glm::vec3 point, Portal* portal);
 bool check_aabb_intersection(glm::vec3 a_min, glm::vec3 a_max, glm::vec3 b_min, glm::vec3 b_max);
 bool aabb_brush_collision(glm::vec3 aabb_min, glm::vec3 aabb_max, glm::vec3 translation, Brush* brush, glm::vec3* hit_normal);
 bool raycast(Camera* cam, Scene* scene, RaycastHitInfo* hit_info);
-void scene_aware_movement(Camera* cam, glm::vec3 target_pos, Scene* scene);
+void scene_aware_movement(Camera* cam, glm::vec3 translation, Scene* scene, bool* on_ground);

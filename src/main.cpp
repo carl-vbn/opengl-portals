@@ -13,9 +13,10 @@
 #include "mesh.h"
 #include "renderer.h"
 
-#define MOVEMENT_SPEED 7.0f
+#define MOVEMENT_SPEED 5.0f
 #define MOUSE_X_SENSITIVITY 0.1f
 #define MOUSE_Y_SENSITIVITY 0.1f
+#define GRAVITY 0.05f
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn);
@@ -25,13 +26,15 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 800;
 
-Camera cam = Camera(glm::vec3(0.0f, 5.0f, 10.0f), 0.0f, 0.0f);
+Camera cam = Camera(glm::vec3(-5.0f, 10.0f, 2.0f), 0.0f, 0.0f);
 Scene scene;
 
-float lastx = 0.0f;
-float lasty = 0.0f;
+float vel_y = 0.0f;
+float last_cursor_x = 0.0f;
+float last_cursor_y = 0.0f;
 bool focused = false;
 bool pos_printed = false;
+bool on_ground;
 
 int glfw_setup(GLFWwindow** window) {
     glfwInit();
@@ -121,11 +124,11 @@ void process_input(GLFWwindow *window, double deltaTime)
     float speed_multiplier = deltaTime * MOVEMENT_SPEED * (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS ? 0.2f : 1.0f); 
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        newPos += cam.GetForwardDirection() * speed_multiplier;
+        newPos += cam.GetPitchlessForwardDirection() * speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        newPos -= cam.GetForwardDirection() * speed_multiplier;
+        newPos -= cam.GetPitchlessForwardDirection() * speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
@@ -136,17 +139,19 @@ void process_input(GLFWwindow *window, double deltaTime)
         newPos -= cam.GetRightDirection() * speed_multiplier;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        newPos.y += speed_multiplier;
+    if (on_ground && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        vel_y = 0.03f;
     }
 
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        newPos.y -= speed_multiplier;
+        vel_y = -0.05f;
     }
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         focused = false;
     }
+
+    newPos.y += vel_y;
 
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) { 
         if (!pos_printed) {
@@ -163,7 +168,13 @@ void process_input(GLFWwindow *window, double deltaTime)
         pos_printed = false;
     }
 
-    scene_aware_movement(&cam, newPos, &scene);
+    scene_aware_movement(&cam, newPos, &scene, &on_ground);
+
+    if (on_ground) {
+        vel_y = 0;
+    } else {
+        vel_y -= GRAVITY * deltaTime;
+    }
 
     renderer::debug_cube_xray = glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS;
     renderer::show_pcam_povs = glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS;
@@ -181,19 +192,19 @@ void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
     float xpos = static_cast<float>(xposIn) - SCR_WIDTH / 2.0f;
     float ypos = static_cast<float>(yposIn) - SCR_HEIGHT / 2.0f;
 
-    if (lastx == 0.0f && lasty == 0.0f) {
-        lastx = xpos;
-        lasty = ypos;
+    if (last_cursor_x == 0.0f && last_cursor_y == 0.0f) {
+        last_cursor_x = xpos;
+        last_cursor_y = ypos;
     }
 
-    float offsetx = xpos - lastx;
-    float offsety = ypos - lasty;
+    float offsetx = xpos - last_cursor_x;
+    float offsety = ypos - last_cursor_y;
 
     cam.yaw -= offsetx * MOUSE_X_SENSITIVITY;
     cam.pitch -= offsety * MOUSE_Y_SENSITIVITY;
 
-    lastx = xpos;
-    lasty = ypos;
+    last_cursor_x = xpos;
+    last_cursor_y = ypos;
 
     // make sure that when pitch is out of bounds, screen doesn't get flipped
     if (cam.pitch > 89.0f)
@@ -253,8 +264,8 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
     if (!focused) {
         focused = true;
-        lastx = 0.0f;
-        lasty = 0.0f;
+        last_cursor_x = 0.0f;
+        last_cursor_y = 0.0f;
 
         return;
     }

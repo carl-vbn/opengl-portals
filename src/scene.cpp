@@ -70,6 +70,18 @@ glm::vec3 Camera::GetForwardDirection() {
     return direction;
 }
 
+glm::vec3 Camera::GetPitchlessForwardDirection() {
+    // direction.x = cos(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
+    // direction.y = sin(glm::radians(this->pitch));
+    // direction.z = sin(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
+
+    glm::vec3 direction;
+    direction.x = -sin(glm::radians(this->yaw));
+    direction.y = 0.0f;
+    direction.z = -cos(glm::radians(this->yaw));
+    return direction;
+}
+
 glm::vec3 Camera::GetRightDirection() {
     return glm::cross(this->GetForwardDirection(), glm::vec3(0.0f, 1.0f, 0.0f));
 }
@@ -364,7 +376,9 @@ bool portal_aabb_collision_test(Portal* portal, glm::vec3 max, glm::vec3 min) {
 }
 
 // Move the camera while handling collision and portal teleportation
-void scene_aware_movement(Camera* cam, glm::vec3 target_pos, Scene* scene) {
+void scene_aware_movement(Camera* cam, glm::vec3 target_pos, Scene* scene, bool* on_ground) {
+    *on_ground = false;
+
     // First run the portal logic
     // This will teleport the camera if it is moving through a portal
     if (!handle_portal_movement(cam, target_pos, scene)) {
@@ -379,9 +393,13 @@ void scene_aware_movement(Camera* cam, glm::vec3 target_pos, Scene* scene) {
             }
 
             glm::vec3 hit_normal;
-            if (aabb_brush_collision(cam->position-glm::vec3(0.1f, 1.86f, 0.1), cam->position+glm::vec3(0.1f), translation, brush, &hit_normal)) {
+            if (aabb_brush_collision(cam->position-glm::vec3(0.1f, 1.5f, 0.1), cam->position+glm::vec3(0.1f), translation, brush, &hit_normal)) {
                 glm::vec3 projection = glm::dot(hit_normal, translation) * hit_normal;
                 translation = translation - projection;
+
+                if (glm::dot(hit_normal, glm::vec3(0.0f, 1.0f, 0.0f)) > 0.1f) {
+                    *on_ground = true;
+                }
             }
         }
 
