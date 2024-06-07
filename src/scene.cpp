@@ -15,6 +15,7 @@
 #define READ_INT32(value) file.read(reinterpret_cast<char*>((value)), sizeof(int))
 #define READ_FLOAT(value) file.read(reinterpret_cast<char*>((value)), sizeof(float))
 #define READ_FLOAT3(value) file.read(reinterpret_cast<char*>((value)), sizeof(float) * 3)
+#define VERY_CLOSE(vec1, vec2) glm::length(vec1 - vec2) < 0.001
 
 void load_scene_file(const char* path, Scene* scene) {
     std::ifstream file(path, std::ios::binary);
@@ -379,6 +380,10 @@ bool portal_aabb_collision_test(Portal* portal, glm::vec3 max, glm::vec3 min) {
 void scene_aware_movement(Camera* cam, glm::vec3 target_pos, Scene* scene, bool* on_ground) {
     *on_ground = false;
 
+    glm::vec3 player_aabb_min = cam->position - glm::vec3(0.1f, 1.5f, 0.1);
+    glm::vec3 player_aabb_max = cam->position + glm::vec3(0.1f);
+    glm::vec3 player_center = (player_aabb_min + player_aabb_max) / 2.0f;
+
     // First run the portal logic
     // This will teleport the camera if it is moving through a portal
     if (!handle_portal_movement(cam, target_pos, scene)) {
@@ -387,13 +392,29 @@ void scene_aware_movement(Camera* cam, glm::vec3 target_pos, Scene* scene, bool*
         for (size_t brush_index = 0; brush_index < scene->geometry.size(); brush_index++) {
             Brush* brush = &scene->geometry[brush_index];
 
-            // Check if a portal is on this brush
-            if (scene->portal1.brush == brush || scene->portal2.brush == brush) {
-                continue;
-            }
-
             glm::vec3 hit_normal;
-            if (aabb_brush_collision(cam->position-glm::vec3(0.1f, 1.5f, 0.1), cam->position+glm::vec3(0.1f), translation, brush, &hit_normal)) {
+            if (aabb_brush_collision(player_aabb_min, player_aabb_max, translation, brush, &hit_normal)) {
+                // If this brush has an open portal that is facing the same way as the hit face
+                // and is close enough to the center of the player's AABB, ignore the collision
+                if (
+                    scene->portal1.open &&
+                    scene->portal2.open &&
+                    (
+                        (
+                            scene->portal1.brush == brush &&
+                            VERY_CLOSE(scene->portal1.normal, hit_normal) &&
+                            glm::length(scene->portal1.position - player_center) < scene->portal1.width
+                        ) ||
+                        (
+                            scene->portal2.brush == brush &&
+                            VERY_CLOSE(scene->portal2.normal, hit_normal) &&
+                            glm::length(scene->portal2.position - player_center) < scene->portal2.width
+                        )
+                    )
+                ) {
+                    continue;
+                }
+                
                 glm::vec3 projection = glm::dot(hit_normal, translation) * hit_normal;
                 translation = translation - projection;
 
