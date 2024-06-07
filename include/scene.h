@@ -5,6 +5,8 @@
 #include "mesh.h"
 
 #define PORTAL_THICKNESS 0.1f
+#define CUBE_SIZE 0.5f
+#define GRAVITY -8.0f
 #define PRINT_VEC3(vec3) std::cout << (vec3).x << " " << (vec3).y << " " << (vec3).z << std::endl
 
 struct Brush {
@@ -29,8 +31,19 @@ struct Portal {
     Portal(glm::vec3 position, glm::vec3 normal, float width, float height) : open(true), position(position), normal(normal), width(width), height(height) {}
 };
 
+struct Cube {
+    glm::vec3 position;
+    glm::vec3 velocity;
+    glm::vec3 color;
+
+    Cube(glm::vec3 position, glm::vec3 color): position(position), velocity(glm::vec3(0.0f)), color(color) {}
+    
+    glm::mat4 GetTransform();
+};
+
 struct Scene {
     std::vector<Brush> geometry;
+    std::vector<Cube> cubes;
     Portal portal1;
     Portal portal2;
     glm::vec3 light_dir;
@@ -76,3 +89,4 @@ bool check_aabb_intersection(glm::vec3 a_min, glm::vec3 a_max, glm::vec3 b_min, 
 bool aabb_brush_collision(glm::vec3 aabb_min, glm::vec3 aabb_max, glm::vec3 translation, Brush* brush, glm::vec3* hit_normal);
 bool raycast(Camera* cam, Scene* scene, RaycastHitInfo* hit_info);
 void scene_aware_movement(Camera* cam, glm::vec3 translation, Scene* scene, bool* on_ground);
+void update_cubes(Scene* scene, float deltaTime);

@@ -47,6 +47,8 @@ void load_scene_file(const char* path, Scene* scene) {
     scene->portal1.height = 1.0f;
     scene->portal2.width = 1.0f;
     scene->portal2.height = 1.0f;
+
+    scene->cubes.push_back(Cube(glm::vec3(-10.0f, 10.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 }
 
 Camera::Camera(glm::mat4 transform) {
@@ -126,13 +128,12 @@ glm::mat4 pcam_transform(Camera* real_cam, Portal* portal, Portal* linked_portal
     return p2model_rotated * glm::inverse(p1model) * cam_model;
 }
 
-bool find_portal_intersection(glm::vec3 start, glm::vec3 stop, Portal* portal, glm::vec3* intersection) {
+bool find_portal_intersection(glm::vec3 start, glm::vec3 translation, Portal* portal, glm::vec3* intersection) {
     float dist;
-    glm::vec3 translationVector = stop - start;
-    glm::vec3 dir = glm::normalize(translationVector);
+    glm::vec3 dir = glm::normalize(translation);
     if (glm::dot(dir, portal->normal) < 0.0f && glm::intersectRayPlane(start, dir, portal->position, portal->normal, dist)) {
         glm::vec3 planeIntersection = start + dir * dist;
-        if (dist < glm::length(translationVector) + 0.001 && glm::distance(planeIntersection, portal->position) < portal->width) {
+        if (dist < glm::length(translation) + 0.001 && glm::distance(planeIntersection, portal->position) < portal->width) {
             *intersection = planeIntersection;
             return true;
         }
@@ -156,14 +157,14 @@ bool is_in_portal(glm::vec3 point, Portal* portal) {
     return point.x > min.x && point.y > min.y && point.z > min.z && point.x < max.x && point.y < max.y && point.z < max.z;
 }
 
-bool handle_portal_movement(Camera* cam, glm::vec3 target_pos, Scene* scene) {
+bool handle_portal_movement(Camera* cam, glm::vec3 translation, Scene* scene) {
     glm::vec3 intersection;
     bool both_portals_open = scene->portal1.open && scene->portal2.open;
-    if (both_portals_open && find_portal_intersection(cam->position, target_pos, &scene->portal1, &intersection)) {
+    if (both_portals_open && find_portal_intersection(cam->position, translation, &scene->portal1, &intersection)) {
         cam->SetTransform(pcam_transform(cam, &scene->portal1, &scene->portal2));
         std::cout << "P1 -> P2" << std::endl;
         return true;
-    } else if (both_portals_open && find_portal_intersection(cam->position, target_pos, &scene->portal2, &intersection)) {
+    } else if (both_portals_open && find_portal_intersection(cam->position, translation, &scene->portal2, &intersection)) {
         cam->SetTransform(pcam_transform(cam, &scene->portal2, &scene->portal1));
         std::cout << "P2 -> P1" << std::endl;
         return true;
@@ -377,18 +378,17 @@ bool portal_aabb_collision_test(Portal* portal, glm::vec3 max, glm::vec3 min) {
 }
 
 // Move the camera while handling collision and portal teleportation
-void scene_aware_movement(Camera* cam, glm::vec3 target_pos, Scene* scene, bool* on_ground) {
+void scene_aware_movement(Camera* cam, glm::vec3 translation, Scene* scene, bool* on_ground) {
     *on_ground = false;
 
-    glm::vec3 player_aabb_min = cam->position - glm::vec3(0.1f, 1.5f, 0.1);
-    glm::vec3 player_aabb_max = cam->position + glm::vec3(0.1f);
+    glm::vec3 player_aabb_min = cam->position - glm::vec3(0.2f, 1.5f, 0.2f);
+    glm::vec3 player_aabb_max = cam->position + glm::vec3(0.2f);
     glm::vec3 player_center = (player_aabb_min + player_aabb_max) / 2.0f;
 
     // First run the portal logic
     // This will teleport the camera if it is moving through a portal
-    if (!handle_portal_movement(cam, target_pos, scene)) {
+    if (!handle_portal_movement(cam, translation, scene)) {
         // If the portal logic did not move the camera, we do a collision check
-        glm::vec3 translation = target_pos-cam->position;
         for (size_t brush_index = 0; brush_index < scene->geometry.size(); brush_index++) {
             Brush* brush = &scene->geometry[brush_index];
 
@@ -426,5 +426,17 @@ void scene_aware_movement(Camera* cam, glm::vec3 target_pos, Scene* scene, bool*
 
         // If no collision is detected, just move the camera
         cam->position += translation;
+    }
+}
+
+void update_cubes(Scene* scene, float deltaTime) {
+    if (scene->time < 5.0f) return;
+
+    for (size_t cube_index = 0; cube_index < scene->cubes.size(); cube_index++) {
+        Cube* cube = &scene->cubes[cube_index];
+
+        cube->velocity.y += GRAVITY * deltaTime;
+        PRINT_VEC3(cube->velocity);
+        cube->position += cube->velocity * deltaTime;
     }
 }

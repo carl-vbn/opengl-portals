@@ -212,6 +212,19 @@ namespace renderer {
             glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
         }
 
+        // Draw cubes
+        for (size_t i = 0; i<scene->cubes.size(); i++) {
+            Cube* cube = &scene->cubes[i];
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, cube->position);
+            model = glm::scale(model, glm::vec3(CUBE_SIZE));
+            mvp = projection * view * model;
+            glUniformMatrix4fv(standard_shader.u_M, 1, GL_FALSE, glm::value_ptr(model));
+            glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+            glUniform3f(standard_shader.u_color, cube->color.r, cube->color.g, cube->color.b);
+            glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+        }
+
         // Draw portals
         if (draw_portals) {
             glDisable(GL_CULL_FACE);

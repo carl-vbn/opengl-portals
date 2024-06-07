@@ -16,7 +16,6 @@
 #define MOVEMENT_SPEED 5.0f
 #define MOUSE_X_SENSITIVITY 0.1f
 #define MOUSE_Y_SENSITIVITY 0.1f
-#define GRAVITY 0.05f
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn);
@@ -117,41 +116,41 @@ int main()
 
 void process_input(GLFWwindow *window, double deltaTime)
 {
-    glm::vec3 newPos = cam.position;
+    glm::vec3 translation = glm::vec3(0.0f);
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
     float speed_multiplier = deltaTime * MOVEMENT_SPEED * (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS ? 0.2f : 1.0f); 
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        newPos += cam.GetPitchlessForwardDirection() * speed_multiplier;
+        translation += cam.GetPitchlessForwardDirection() * speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        newPos -= cam.GetPitchlessForwardDirection() * speed_multiplier;
+        translation -= cam.GetPitchlessForwardDirection() * speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        newPos += cam.GetRightDirection() * speed_multiplier;
+        translation += cam.GetRightDirection() * speed_multiplier;
     }
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        newPos -= cam.GetRightDirection() * speed_multiplier;
+        translation -= cam.GetRightDirection() * speed_multiplier;
     }
 
     if (on_ground && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        vel_y = 0.03f;
+        vel_y = 4.0f;
     }
 
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        vel_y = -0.05f;
+        vel_y = -4.0f;
     }
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         focused = false;
     }
 
-    newPos.y += vel_y;
+    translation.y += vel_y * deltaTime;
 
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) { 
         if (!pos_printed) {
@@ -168,12 +167,13 @@ void process_input(GLFWwindow *window, double deltaTime)
         pos_printed = false;
     }
 
-    scene_aware_movement(&cam, newPos, &scene, &on_ground);
+    scene_aware_movement(&cam, translation, &scene, &on_ground);
+    update_cubes(&scene, deltaTime);
 
     if (on_ground) {
         vel_y = 0;
     } else {
-        vel_y -= GRAVITY * deltaTime;
+        vel_y += GRAVITY * deltaTime;
     }
 
     renderer::debug_cube_xray = glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS;
