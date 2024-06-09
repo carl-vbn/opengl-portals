@@ -13,7 +13,8 @@
 #include "mesh.h"
 #include "renderer.h"
 
-#define MOVEMENT_SPEED 5.0f
+#define CAPTURE_CURSOR
+#define MOVEMENT_SPEED 2.0f
 #define MOUSE_X_SENSITIVITY 0.1f
 #define MOUSE_Y_SENSITIVITY 0.1f
 
@@ -56,15 +57,16 @@ int glfw_setup(GLFWwindow** window) {
     glfwSetFramebufferSizeCallback(*window, framebuffer_size_callback);
     glfwSetCursorPosCallback(*window, cursor_pos_callback);
     glfwSetMouseButtonCallback(*window, mouse_button_callback);
-    // glfwSetInputMode(*window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
+#ifdef CAPTURE_CURSOR
+    glfwSetInputMode(*window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+#endif
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
-
-    glfwSetCursorPos(*window, SCR_WIDTH / 2.0f, SCR_HEIGHT / 2.0f);
 
     return 0;
 }
@@ -192,16 +194,28 @@ void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
     float xpos = static_cast<float>(xposIn) - SCR_WIDTH / 2.0f;
     float ypos = static_cast<float>(yposIn) - SCR_HEIGHT / 2.0f;
 
+#ifndef CAPTURE_CURSOR
     if (last_cursor_x == 0.0f && last_cursor_y == 0.0f) {
         last_cursor_x = xpos;
         last_cursor_y = ypos;
     }
+#endif
 
     float offsetx = xpos - last_cursor_x;
     float offsety = ypos - last_cursor_y;
 
+    std::cout << offsetx << "  " << offsety << std::endl;
+
     cam.yaw -= offsetx * MOUSE_X_SENSITIVITY;
     cam.pitch -= offsety * MOUSE_Y_SENSITIVITY;
+
+#ifdef CAPTURE_CURSOR
+    if (xpos != 0.0f || ypos != 0.0f) {
+        glfwSetCursorPos(window, SCR_WIDTH / 2.0f, SCR_HEIGHT / 2.0f);
+        xpos = 0.0f;
+        ypos = 0.0;
+    }
+#endif
 
     last_cursor_x = xpos;
     last_cursor_y = ypos;

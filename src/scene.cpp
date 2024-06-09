@@ -436,7 +436,6 @@ void update_cubes(Scene* scene, float deltaTime) {
         Cube* cube = &scene->cubes[cube_index];
 
         cube->velocity.y += GRAVITY * deltaTime;
-        PRINT_VEC3(cube->velocity);
         cube->position += cube->velocity * deltaTime;
     }
 }
