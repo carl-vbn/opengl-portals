@@ -23,8 +23,8 @@ void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn);
 void process_input(GLFWwindow* window, double deltaTime);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 800;
+const unsigned int SCR_WIDTH = 1280;
+const unsigned int SCR_HEIGHT = 720;
 
 Camera cam = Camera(glm::vec3(-5.0f, 10.0f, 2.0f), 0.0f, 0.0f);
 Scene scene;
@@ -103,7 +103,7 @@ int main()
 
         process_input(window, deltaTime);
 
-        renderer::render_screen(&scene, &cam);
+        renderer::render_screen(&scene, &cam, (float)SCR_WIDTH / SCR_HEIGHT);
  
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -203,8 +203,6 @@ void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
 
     float offsetx = xpos - last_cursor_x;
     float offsety = ypos - last_cursor_y;
-
-    std::cout << offsetx << "  " << offsety << std::endl;
 
     cam.yaw -= offsetx * MOUSE_X_SENSITIVITY;
     cam.pitch -= offsety * MOUSE_Y_SENSITIVITY;

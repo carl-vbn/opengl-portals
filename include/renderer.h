@@ -17,6 +17,7 @@ struct ScreenShader {
     GLuint program;
     GLuint u_screentex;
     GLuint u_transform;
+    GLuint u_aspectratio;
 };
 
 struct PortalShader {
@@ -41,7 +42,7 @@ namespace renderer {
     int gen_rendertarget(RenderTarget* target, int width, int height, bool fpbuff=false);
     void del_rendertarget(RenderTarget* target);
     void render_scene(Scene* scene, glm::mat4 view, glm::mat4 projection, bool draw_portals, glm::vec3 slice_pos, glm::vec3 slice_normal);
-    void render_screen(Scene* scene, Camera* cam);
+    void render_screen(Scene* scene, Camera* cam, float aspect_ratio);
 
     extern bool debug_cube_xray;
     extern bool show_pcam_povs;

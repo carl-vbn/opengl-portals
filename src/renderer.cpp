@@ -138,6 +138,7 @@ namespace renderer {
         LOAD_SHADERPRG(screen_shader, "screen");
         LOCATE_UNIFORM(screen_shader, u_screentex);
         LOCATE_UNIFORM(screen_shader, u_transform);
+        LOCATE_UNIFORM(screen_shader, u_aspectratio);
 
         LOAD_SHADERPRG(portal_shader, "portal");
         LOCATE_UNIFORM(portal_shader, u_rendertex);
@@ -253,7 +254,7 @@ namespace renderer {
     }
 
     // Render everything to the screen (this includes the FBO pass)
-    void render_screen(Scene* scene, Camera* cam) {        
+    void render_screen(Scene* scene, Camera* cam, float aspect_ratio) {        
         if (scene->portal1.open && scene->portal2.open) {
             // First portal target
             Camera p1cam = Camera(pcam_transform(cam, &scene->portal1, &scene->portal2));
@@ -281,6 +282,7 @@ namespace renderer {
         glDisable(GL_DEPTH_TEST);
         glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(screen_shader.program);
+        glUniform1f(screen_shader.u_aspectratio, aspect_ratio);
         glBindVertexArray(primitives::quad->vao);
 
         // Main camera
