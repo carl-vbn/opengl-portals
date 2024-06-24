@@ -115,17 +115,23 @@ glm::mat4 Camera::GetTransform() {
     return translationMatrix * rotationMatrix;
 }
 
+glm::mat4 Cube::GetTransform() {
+    return glm::translate(glm::mat4(1.0f), this->position);
+}
+
 glm::mat4 portal_rotation(Portal* portal) {
     return glm::eulerAngleYX(glm::atan(portal->normal.x, portal->normal.z), glm::asin(-portal->normal.y));
 }
 
-glm::mat4 pcam_transform(Camera* real_cam, Portal* portal, Portal* linked_portal) {
+glm::mat4 portal_transform(Portal* portal, Portal* linked_portal) {
     glm::mat4 p1model = glm::translate(glm::mat4(1.0f), portal->position) * portal_rotation(portal);
     glm::mat4 p2model = glm::translate(glm::mat4(1.0f), linked_portal->position) * portal_rotation(linked_portal);
     glm::mat4 p2model_rotated = glm::rotate(p2model, glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 cam_model = real_cam->GetTransform();
-    
-    return p2model_rotated * glm::inverse(p1model) * cam_model;
+    return p2model_rotated * glm::inverse(p1model);
+}
+
+glm::mat4 pcam_transform(Camera* real_cam, Portal* portal, Portal* linked_portal) {
+    return portal_transform(portal, linked_portal) * real_cam->GetTransform();
 }
 
 bool find_portal_intersection(glm::vec3 start, glm::vec3 translation, Portal* portal, glm::vec3* intersection) {
@@ -429,13 +435,96 @@ void scene_aware_movement(Camera* cam, glm::vec3 translation, Scene* scene, bool
     }
 }
 
-void update_cubes(Scene* scene, float deltaTime) {
-    if (scene->time < 5.0f) return;
+void teleport_cube(Cube* cube, Portal* in_portal, Portal* out_portal) {
+    glm::mat4 ptransform = portal_transform(in_portal, out_portal);
+    glm::mat4 cube_transform = cube->GetTransform();
 
+    glm::mat4 teleported_transform = ptransform * cube_transform;
+
+    cube->position = teleported_transform[3];
+    cube->velocity = ptransform * glm::vec4(cube->velocity, 0.0f);
+}
+
+glm::vec3 find_holding_position(Camera* cam, Scene* scene) {
+    glm::vec3 holding_pos = cam->position + cam->GetForwardDirection() * HOLDING_DISTANCE;
+    RaycastHitInfo hit;
+    if (raycast(cam, scene, &hit) && glm::distance(cam->position, hit.intersection) < HOLDING_DISTANCE) {
+        holding_pos = hit.intersection;
+    }
+
+    // Check if there is a portal in the way
+    glm::vec3 intersection;
+    if (find_portal_intersection(cam->position, holding_pos, &scene->portal1, &intersection)) {
+        holding_pos = portal_transform(&scene->portal1, &scene->portal2) * glm::vec4(holding_pos, 0.0f);
+    } else if (find_portal_intersection(cam->position, holding_pos, &scene->portal2, &intersection)) {
+        holding_pos = portal_transform(&scene->portal2, &scene->portal1) * glm::vec4(holding_pos, 0.0f);
+    }
+
+    return holding_pos;
+}
+
+void update_cubes(Scene* scene, Camera* cam, float deltaTime) {
     for (size_t cube_index = 0; cube_index < scene->cubes.size(); cube_index++) {
         Cube* cube = &scene->cubes[cube_index];
+        glm::vec3 cube_aabb_min = cube->position - cube->size;
+        glm::vec3 cube_aabb_max = cube->position + cube->size;
 
-        cube->velocity.y += GRAVITY * deltaTime;
-        cube->position += cube->velocity * deltaTime;
+        if (cube->grabbed) {
+            glm::vec3 target_pos = find_holding_position(cam, scene);
+            cube->velocity = (target_pos - cube->position) * 1000.0f * deltaTime;
+        } else {
+            cube->velocity.y += GRAVITY * deltaTime;
+        }
+
+        glm::vec3 translation = cube->velocity * deltaTime;
+
+        // Handle portal logic
+        glm::vec3 intersection;
+        bool both_portals_open = scene->portal1.open && scene->portal2.open;
+        if (both_portals_open && find_portal_intersection(cube->position, translation, &scene->portal1, &intersection)) {
+            teleport_cube(cube, &scene->portal1, &scene->portal2);
+        } else if (both_portals_open && find_portal_intersection(cube->position, translation, &scene->portal2, &intersection)) {
+            teleport_cube(cube, &scene->portal2, &scene->portal1);
+        }
+
+        translation = cube->velocity * deltaTime;
+
+        // Collision logic
+        for (size_t brush_index = 0; brush_index < scene->geometry.size(); brush_index++) {
+            Brush* brush = &scene->geometry[brush_index];
+
+            glm::vec3 hit_normal;
+            if (aabb_brush_collision(cube_aabb_min, cube_aabb_max, translation, brush, &hit_normal)) {
+                // If this brush has an open portal that is facing the same way as the hit face
+                // and is close enough to the center of the player's AABB, ignore the collision
+                if (
+                    scene->portal1.open &&
+                    scene->portal2.open &&
+                    (
+                        (
+                            scene->portal1.brush == brush &&
+                            VERY_CLOSE(scene->portal1.normal, hit_normal) &&
+                            glm::length(scene->portal1.position - cube->position) < scene->portal1.width
+                        ) ||
+                        (
+                            scene->portal2.brush == brush &&
+                            VERY_CLOSE(scene->portal2.normal, hit_normal) &&
+                            glm::length(scene->portal2.position - cube->position) < scene->portal2.width
+                        )
+                    )
+                ) {
+                    continue;
+                }
+                
+                glm::vec3 projection = glm::dot(hit_normal, translation) * hit_normal;
+                translation = translation - projection;
+
+                if (glm::dot(hit_normal, glm::vec3(0.0f, 1.0f, 0.0f)) > 0.1f) {
+                    cube->velocity = glm::vec3(0.0f);
+                }
+            }
+        }
+
+        cube->position += translation;
     }
 }

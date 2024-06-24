@@ -218,7 +218,7 @@ namespace renderer {
             Cube* cube = &scene->cubes[i];
             model = glm::mat4(1.0f);
             model = glm::translate(model, cube->position);
-            model = glm::scale(model, glm::vec3(CUBE_SIZE));
+            model = glm::scale(model, glm::vec3(cube->size));
             mvp = projection * view * model;
             glUniformMatrix4fv(standard_shader.u_M, 1, GL_FALSE, glm::value_ptr(model));
             glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));

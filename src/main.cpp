@@ -14,7 +14,7 @@
 #include "renderer.h"
 
 #define CAPTURE_CURSOR
-#define MOVEMENT_SPEED 2.0f
+#define MOVEMENT_SPEED 5.0f
 #define MOUSE_X_SENSITIVITY 0.1f
 #define MOUSE_Y_SENSITIVITY 0.1f
 
@@ -22,6 +22,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn);
 void process_input(GLFWwindow* window, double deltaTime);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
@@ -33,7 +34,6 @@ float vel_y = 0.0f;
 float last_cursor_x = 0.0f;
 float last_cursor_y = 0.0f;
 bool focused = false;
-bool pos_printed = false;
 bool on_ground;
 
 int glfw_setup(GLFWwindow** window) {
@@ -57,6 +57,7 @@ int glfw_setup(GLFWwindow** window) {
     glfwSetFramebufferSizeCallback(*window, framebuffer_size_callback);
     glfwSetCursorPosCallback(*window, cursor_pos_callback);
     glfwSetMouseButtonCallback(*window, mouse_button_callback);
+    glfwSetKeyCallback(*window, key_callback);
 
 #ifdef CAPTURE_CURSOR
     glfwSetInputMode(*window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
@@ -118,6 +119,10 @@ int main()
 
 void process_input(GLFWwindow *window, double deltaTime)
 {
+    if (deltaTime > 0.5f) {
+        return;
+    }
+
     glm::vec3 translation = glm::vec3(0.0f);
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -154,23 +159,8 @@ void process_input(GLFWwindow *window, double deltaTime)
 
     translation.y += vel_y * deltaTime;
 
-    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) { 
-        if (!pos_printed) {
-            PRINT_VEC3(cam.position);
-            if (scene.portal1.open && is_in_portal(cam.position, &scene.portal1)) {
-                std::cout << "In portal 1" << std::endl;
-            }
-            if (scene.portal2.open && is_in_portal(cam.position, &scene.portal2)) {
-                std::cout << "In portal 2" << std::endl;
-            }
-            pos_printed = true;
-        }
-    } else {
-        pos_printed = false;
-    }
-
     scene_aware_movement(&cam, translation, &scene, &on_ground);
-    update_cubes(&scene, deltaTime);
+    update_cubes(&scene, &cam, deltaTime);
 
     if (on_ground) {
         vel_y = 0;
@@ -289,5 +279,25 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
     if (button == GLFW_MOUSE_BUTTON_2 && raycast(&cam, &scene, &hit_info)) {
         place_portal(&scene.portal2, &hit_info);
+    }
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (key == GLFW_KEY_P && action == GLFW_PRESS) { 
+        PRINT_VEC3(cam.position);
+        if (scene.portal1.open && is_in_portal(cam.position, &scene.portal1)) {
+            std::cout << "In portal 1" << std::endl;
+        }
+        if (scene.portal2.open && is_in_portal(cam.position, &scene.portal2)) {
+            std::cout << "In portal 2" << std::endl;
+        }
+    }
+
+    if (key == GLFW_KEY_E && action == GLFW_PRESS) { 
+        Cube* cube = &scene.cubes[0];
+        cube->grabbed = !cube->grabbed;
+        if (glm::length(cube->velocity) > 10.0f) {
+            cube->velocity = glm::normalize(cube->velocity) * 10.0f;
+        }
     }
 }
