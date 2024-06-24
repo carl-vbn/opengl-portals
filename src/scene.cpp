@@ -445,7 +445,7 @@ void teleport_cube(Cube* cube, Portal* in_portal, Portal* out_portal) {
     cube->velocity = ptransform * glm::vec4(cube->velocity, 0.0f);
 }
 
-glm::vec3 find_holding_position(Camera* cam, Scene* scene) {
+glm::vec3 find_holding_position(Camera* cam, Scene* scene, float cube_size) {
     glm::vec3 translation = cam->GetForwardDirection() * HOLDING_DISTANCE;
     glm::vec3 holding_pos = cam->position + translation;
 
@@ -458,7 +458,7 @@ glm::vec3 find_holding_position(Camera* cam, Scene* scene) {
     } else {
         RaycastHitInfo hit;
         if (raycast(cam, scene, &hit) && glm::distance(cam->position, hit.intersection) < HOLDING_DISTANCE) {
-            holding_pos = hit.intersection;
+            holding_pos = hit.intersection + hit.normal * cube_size;
         }
     }
 
@@ -487,7 +487,7 @@ void update_cubes(Scene* scene, Camera* cam, float deltaTime) {
         glm::vec3 cube_aabb_max = cube->position + cube->size;
 
         if (cube->grabbed) {
-            glm::vec3 target_pos = find_holding_position(cam, scene);
+            glm::vec3 target_pos = find_holding_position(cam, scene, cube->size);
             cube->velocity = portal_aware_direction(cube->position, target_pos, scene) * 500.0f * deltaTime;
             // cube->velocity = glm::vec3(0.0f);
             // cube->position = target_pos;
