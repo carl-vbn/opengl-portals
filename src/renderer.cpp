@@ -22,6 +22,7 @@ namespace renderer {
     RenderTarget main_target;
     RenderTarget portal1_target, portal2_target;
     glm::mat4 debug_cube_transform(1.0f);
+    float aspect_ratio;
     bool debug_cube_xray = false;
     bool show_pcam_povs = false;
 
@@ -148,7 +149,8 @@ namespace renderer {
         LOCATE_UNIFORM(portal_shader, u_outradius);
         LOCATE_UNIFORM(portal_shader, u_inradius);
 
-        projection = glm::perspective(fov, (float)scr_width/scr_height, 0.1f, 100.0f);
+        aspect_ratio = (float)scr_width / scr_height;
+        projection = glm::perspective(fov, aspect_ratio, 0.1f, 100.0f);
 
         gen_rendertarget(&main_target, scr_width, scr_height);
         gen_rendertarget(&portal1_target, scr_width, scr_height);
@@ -157,6 +159,19 @@ namespace renderer {
         glEnable(GL_CULL_FACE);
 
         return 0;
+    }
+
+    void update_screen_size(int scr_width, int scr_height, float fov) {
+        del_rendertarget(&main_target);
+        del_rendertarget(&portal1_target);
+        del_rendertarget(&portal2_target);
+
+        aspect_ratio = (float)scr_width / scr_height;
+        projection = glm::perspective(fov, aspect_ratio, 0.1f, 100.0f);
+
+        gen_rendertarget(&main_target, scr_width, scr_height);
+        gen_rendertarget(&portal1_target, scr_width, scr_height);
+        gen_rendertarget(&portal2_target, scr_width, scr_height);
     }
 
     void dispose() {
@@ -255,7 +270,7 @@ namespace renderer {
     }
 
     // Render everything to the screen (this includes the FBO pass)
-    void render_screen(Scene* scene, Camera* cam, float aspect_ratio) {        
+    void render_screen(Scene* scene, Camera* cam) {        
         if (scene->portal1.open && scene->portal2.open) {
             // First portal target
             Camera p1cam = Camera(pcam_transform(cam, &scene->portal1, &scene->portal2));

@@ -24,8 +24,8 @@ void process_input(GLFWwindow* window, double deltaTime);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
-const unsigned int SCR_WIDTH = 1280;
-const unsigned int SCR_HEIGHT = 720;
+unsigned int screen_width = 1280;
+unsigned int screen_height = 720;
 
 Camera cam = Camera(glm::vec3(-5.0f, 10.0f, 2.0f), 0.0f, 0.0f);
 Scene scene;
@@ -46,7 +46,7 @@ int glfw_setup(GLFWwindow** window) {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Portal", NULL, NULL);
+    *window = glfwCreateWindow(screen_width, screen_height, "Portal", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -78,7 +78,7 @@ int main()
     if (glfw_setup(&window) != 0) return -1;
 
     primitives::setup();
-    renderer::setup(SCR_WIDTH, SCR_HEIGHT, glm::radians(45.0f));
+    renderer::setup(screen_width, screen_height, glm::radians(45.0f));
 
     load_scene_file("res/scene.bin", &scene);
 
@@ -104,7 +104,7 @@ int main()
 
         process_input(window, deltaTime);
 
-        renderer::render_screen(&scene, &cam, (float)SCR_WIDTH / SCR_HEIGHT);
+        renderer::render_screen(&scene, &cam);
  
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -175,14 +175,17 @@ void process_input(GLFWwindow *window, double deltaTime)
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+    screen_width = width;
+    screen_height = height;
+    renderer::update_screen_size(width, height, glm::radians(45.0f));
 }
 
 void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
     if (!focused) return;
 
-    float xpos = static_cast<float>(xposIn) - SCR_WIDTH / 2.0f;
-    float ypos = static_cast<float>(yposIn) - SCR_HEIGHT / 2.0f;
+    float xpos = static_cast<float>(xposIn) - screen_height / 2.0f;
+    float ypos = static_cast<float>(yposIn) - screen_height / 2.0f;
 
 #ifndef CAPTURE_CURSOR
     if (last_cursor_x == 0.0f && last_cursor_y == 0.0f) {
@@ -199,7 +202,7 @@ void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
 
 #ifdef CAPTURE_CURSOR
     if (xpos != 0.0f || ypos != 0.0f) {
-        glfwSetCursorPos(window, SCR_WIDTH / 2.0f, SCR_HEIGHT / 2.0f);
+        glfwSetCursorPos(window, screen_height / 2.0f, screen_height / 2.0f);
         xpos = 0.0f;
         ypos = 0.0;
     }
