@@ -4,6 +4,12 @@
 # Compilation output
 obj/
 program
+program.exe
 
 # Blender cache
 *.blend1
+
+# External dependencies
+include/glm/
+include/GLFW/
+glfw3.dll
