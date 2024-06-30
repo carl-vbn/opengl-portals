@@ -167,7 +167,7 @@ bool is_in_portal(glm::vec3 point, Portal* portal) {
 
 bool handle_portal_movement(Camera* cam, glm::vec3 translation, Scene* scene) {
     glm::vec3 intersection;
-    bool both_portals_open = scene->portal1.open && scene->portal2.open;
+    bool both_portals_open = portals_open(scene);
     if (both_portals_open && find_portal_intersection(cam->position, translation, &scene->portal1, &intersection)) {
         cam->SetTransform(pcam_transform(cam, &scene->portal1, &scene->portal2));
         std::cout << "P1 -> P2" << std::endl;
@@ -405,8 +405,7 @@ void scene_aware_movement(Camera* cam, glm::vec3 translation, Scene* scene, bool
                 // If this brush has an open portal that is facing the same way as the hit face
                 // and is close enough to the center of the player's AABB, ignore the collision
                 if (
-                    scene->portal1.open &&
-                    scene->portal2.open &&
+                    portals_open(scene) &&
                     (
                         (
                             scene->portal1.brush == brush &&
@@ -490,7 +489,7 @@ void update_cubes(Scene* scene, Camera* cam, float deltaTime) {
 
         if (cube->grabbed) {
             glm::vec3 target_pos = find_holding_position(cam, scene, cube->size);
-            cube->velocity = portal_aware_direction(cube->position, target_pos, scene) * 500.0f * deltaTime;
+            cube->velocity = portal_aware_direction(cube->position, target_pos, scene) * 1000.0f * deltaTime;
             // cube->velocity = glm::vec3(0.0f);
             // cube->position = target_pos;
         } else {
@@ -508,6 +507,10 @@ void update_cubes(Scene* scene, Camera* cam, float deltaTime) {
             teleport_cube(cube, &scene->portal2, &scene->portal1);
         }
 
+        cube->in_portal = portals_open(scene) && (
+            portal_aabb_collision_test(&scene->portal1, cube_aabb_max, cube_aabb_min) || portal_aabb_collision_test(&scene->portal2, cube_aabb_max, cube_aabb_min)
+        );
+
         translation = cube->velocity * deltaTime;
 
         // Collision logic
@@ -519,8 +522,7 @@ void update_cubes(Scene* scene, Camera* cam, float deltaTime) {
                 // If this brush has an open portal that is facing the same way as the hit face
                 // and is close enough to the center of the player's AABB, ignore the collision
                 if (
-                    scene->portal1.open &&
-                    scene->portal2.open &&
+                    portals_open(scene) &&
                     (
                         (
                             scene->portal1.brush == brush &&
@@ -548,4 +550,8 @@ void update_cubes(Scene* scene, Camera* cam, float deltaTime) {
 
         cube->position += translation;
     }
+}
+
+bool portals_open(Scene* scene) {
+    return scene->portal1.open && scene->portal2.open;
 }
