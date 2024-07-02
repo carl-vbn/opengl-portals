@@ -6,7 +6,7 @@
 
 #define PORTAL_THICKNESS 0.1f
 #define GRAVITY -8.0f
-#define GRAB_REACH 10.0f
+#define GRAB_REACH 5.0f
 #define HOLDING_DISTANCE 3.0f
 #define PRINT_VEC3(vec3) std::cout << (vec3).x << " " << (vec3).y << " " << (vec3).z << std::endl
 
@@ -38,9 +38,8 @@ struct Cube {
     glm::vec3 color;
     float size;
     bool grabbed;
-    bool in_portal;
 
-    Cube(glm::vec3 position, glm::vec3 color): position(position), velocity(glm::vec3(0.0f)), color(color), size(0.25f), grabbed(false), in_portal(false) {}
+    Cube(glm::vec3 position, glm::vec3 color): position(position), velocity(glm::vec3(0.0f)), color(color), size(0.25f), grabbed(false) {}
     
     glm::mat4 GetTransform();
 };
@@ -87,12 +86,13 @@ void load_scene_file(const char* path, Scene* scene);
 glm::mat4 portal_rotation(Portal* portal);
 glm::mat4 portal_transform(Portal* portal, Portal* linked_portal);
 glm::mat4 pcam_transform(Camera* real_cam, Portal* portal, Portal* linked_portal);
+bool portals_open(Scene* scene);
 bool is_in_portal(glm::vec3 point, Portal* portal);
+bool portal_aabb_collision_test(Portal* portal, glm::vec3 min, glm::vec3 max);
 
 /** Movement and Physics **/
 bool check_aabb_intersection(glm::vec3 a_min, glm::vec3 a_max, glm::vec3 b_min, glm::vec3 b_max);
 bool aabb_brush_collision(glm::vec3 aabb_min, glm::vec3 aabb_max, glm::vec3 translation, Brush* brush, glm::vec3* hit_normal);
 bool raycast(Camera* cam, Scene* scene, RaycastHitInfo* hit_info);
-bool portals_open(Scene* scene);
 void scene_aware_movement(Camera* cam, glm::vec3 translation, Scene* scene, bool* on_ground);
 void update_cubes(Scene* scene, Camera* camera, float deltaTime);

@@ -369,17 +369,17 @@ bool aabb_brush_collision(glm::vec3 aabb_min, glm::vec3 aabb_max, glm::vec3 tran
     return true;
 }
 
-bool portal_aabb_collision_test(Portal* portal, glm::vec3 max, glm::vec3 min) {
+bool portal_aabb_collision_test(Portal* portal, glm::vec3 min, glm::vec3 max) {
     glm::vec3 portal_pos = portal->position;
     if (glm::abs(1.0f - glm::abs(glm::dot(portal->normal, glm::vec3(1,0,0)))) < 0.001) {
         // Portal normal is parallel to x-axis
-        return portal_pos.y - portal->height <= min.y && portal_pos.y + portal->height >= max.y && portal_pos.z - portal->width <= min.z && portal_pos.z + portal->width >= max.z;
+        return portal_pos.y - portal->height <= min.y && portal_pos.y + portal->height >= max.y && portal_pos.z - portal->width <= min.z && portal_pos.z + portal->width >= max.z && min.x <= portal_pos.x && max.x >= portal_pos.x;
     } else if (glm::abs(1.0f - glm::abs(glm::dot(portal->normal, glm::vec3(0,1,0)))) < 0.001) {
         // Portal normal is parallel to y-axis
-        return portal_pos.x - portal->width <= min.x && portal_pos.x + portal->width >= max.x && portal_pos.z - portal->height <= min.z && portal_pos.z + portal->height >= max.z;
+        return portal_pos.x - portal->width <= min.x && portal_pos.x + portal->width >= max.x && portal_pos.z - portal->height <= min.z && portal_pos.z + portal->height >= max.z && min.y <= portal_pos.y && max.y >= portal_pos.y;
     } else if (glm::abs(1.0f - glm::abs(glm::dot(portal->normal, glm::vec3(0,0,1)))) < 0.001) {
         // Portal normal is parallel to z-axis
-        return portal_pos.x - portal->width <= min.x && portal_pos.x + portal->width >= max.x && portal_pos.y - portal->height <= min.y && portal_pos.y + portal->height >= max.y;
+        return portal_pos.x - portal->width <= min.x && portal_pos.x + portal->width >= max.x && portal_pos.y - portal->height <= min.y && portal_pos.y + portal->height >= max.y && min.z <= portal_pos.z && max.z >= portal_pos.z;
     } else {
         assert(false);
     }
@@ -489,7 +489,13 @@ void update_cubes(Scene* scene, Camera* cam, float deltaTime) {
 
         if (cube->grabbed) {
             glm::vec3 target_pos = find_holding_position(cam, scene, cube->size);
-            cube->velocity = portal_aware_direction(cube->position, target_pos, scene) * 1000.0f * deltaTime;
+            glm::vec3 difference = portal_aware_direction(cube->position, target_pos, scene);
+            if (glm::length(difference) > GRAB_REACH) {
+                cube->grabbed = false;
+                cube->velocity = glm::vec3(0.0f);
+            } else {
+                cube->velocity = difference * 1000.0f * deltaTime;
+            }
             // cube->velocity = glm::vec3(0.0f);
             // cube->position = target_pos;
         } else {
@@ -507,8 +513,9 @@ void update_cubes(Scene* scene, Camera* cam, float deltaTime) {
             teleport_cube(cube, &scene->portal2, &scene->portal1);
         }
 
-        cube->in_portal = portals_open(scene) && (
-            portal_aabb_collision_test(&scene->portal1, cube_aabb_max, cube_aabb_min) || portal_aabb_collision_test(&scene->portal2, cube_aabb_max, cube_aabb_min)
+        glm::vec3 expand(0.1f);
+        bool in_portal = portals_open(scene) && (
+            portal_aabb_collision_test(&scene->portal1, cube_aabb_min - expand, cube_aabb_max + expand) || portal_aabb_collision_test(&scene->portal2, cube_aabb_min - expand, cube_aabb_max + expand)
         );
 
         translation = cube->velocity * deltaTime;
@@ -518,7 +525,7 @@ void update_cubes(Scene* scene, Camera* cam, float deltaTime) {
             Brush* brush = &scene->geometry[brush_index];
 
             glm::vec3 hit_normal;
-            if (aabb_brush_collision(cube_aabb_min, cube_aabb_max, translation, brush, &hit_normal)) {
+            if (!in_portal && aabb_brush_collision(cube_aabb_min, cube_aabb_max, translation, brush, &hit_normal)) {
                 // If this brush has an open portal that is facing the same way as the hit face
                 // and is close enough to the center of the player's AABB, ignore the collision
                 if (
@@ -527,12 +534,12 @@ void update_cubes(Scene* scene, Camera* cam, float deltaTime) {
                         (
                             scene->portal1.brush == brush &&
                             VERY_CLOSE(scene->portal1.normal, hit_normal) &&
-                            glm::length(scene->portal1.position - cube->position) < scene->portal1.width
+                            glm::min(glm::length(scene->portal1.position - cube_aabb_min), glm::length(scene->portal1.position - cube_aabb_max)) < scene->portal1.width
                         ) ||
                         (
                             scene->portal2.brush == brush &&
                             VERY_CLOSE(scene->portal2.normal, hit_normal) &&
-                            glm::length(scene->portal2.position - cube->position) < scene->portal2.width
+                            glm::min(glm::length(scene->portal1.position - cube_aabb_min), glm::length(scene->portal1.position - cube_aabb_max)) < scene->portal2.width
                         )
                     )
                 ) {

@@ -241,13 +241,26 @@ namespace renderer {
             glUniform3f(standard_shader.u_color, cube->color.r, cube->color.g, cube->color.b);
             glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
 
-            if (cube->in_portal && portals_open(scene)) {
-                // Draw another cube in the other portal
-                glm::mat4 tansformed_model = portal_transform(&scene->portal1, &scene->portal2) * model;
-                mvp = projection * view * tansformed_model;
-                glUniformMatrix4fv(standard_shader.u_M, 1, GL_FALSE, glm::value_ptr(tansformed_model));
-                glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
-                glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+            // Draw another cube in the other portal if necessary
+            if (portals_open(scene)) {
+                Portal* traversed_portal = NULL;
+                Portal* other_portal = NULL;
+                if (portal_aabb_collision_test(&scene->portal1, cube->position-cube->size, cube->position+cube->size)) {
+                    traversed_portal = &scene->portal1;
+                    other_portal = &scene->portal2;
+                } else if (portal_aabb_collision_test(&scene->portal2, cube->position-cube->size, cube->position+cube->size)) {
+                    traversed_portal = &scene->portal2;
+                    other_portal = &scene->portal1;
+                }
+
+                if (traversed_portal != NULL) {
+                    glm::mat4 transformed_model = portal_transform(traversed_portal, other_portal) * model;
+                    mvp = projection * view * transformed_model;
+                    glUniformMatrix4fv(standard_shader.u_M, 1, GL_FALSE, glm::value_ptr(transformed_model));
+                    glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+                    glUniform3f(standard_shader.u_color, cube->color.r, cube->color.g, cube->color.b);
+                    glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+                }
             }
         }
 
