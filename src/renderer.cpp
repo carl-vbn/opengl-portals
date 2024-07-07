@@ -280,18 +280,24 @@ namespace renderer {
         // Draw portals
         if (draw_portals) {
             glDisable(GL_CULL_FACE);
+
             glUseProgram(portal_shader.program);
             
             if (scene->portal1.open) {
+                if (scene->portal1.draw_on_top) glDisable(GL_DEPTH_TEST);
+
                 glBindTexture(GL_TEXTURE_2D, scene->portal2.open ? portal1_target.texture : 0);
                 render_portal(&scene->portal1, scene, view, glm::vec3(0.0f, 1.0f, 1.0f));
             }
 
             if (scene->portal2.open) {
+                if (scene->portal2.draw_on_top) glDisable(GL_DEPTH_TEST);
+
                 glBindTexture(GL_TEXTURE_2D, scene->portal1.open ? portal2_target.texture : 0);
                 render_portal(&scene->portal2, scene, view, glm::vec3(1.0f, 1.0f, 0.0f));
             }
             glEnable(GL_CULL_FACE);
+            glEnable(GL_DEPTH_TEST);
         }
 
         // Draw debug cube

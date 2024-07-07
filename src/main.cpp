@@ -162,6 +162,9 @@ void process_input(GLFWwindow *window, double deltaTime)
     scene_aware_movement(&cam, translation, &scene, &on_ground);
     update_cubes(&scene, &cam, deltaTime);
 
+    scene.portal1.draw_on_top = scene.portal1.open && is_in_portal(cam.position, &scene.portal1);
+    scene.portal2.draw_on_top = scene.portal2.open && is_in_portal(cam.position, &scene.portal2);
+
     if (on_ground) {
         vel_y = 0;
     } else {
