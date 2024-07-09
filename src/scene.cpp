@@ -494,7 +494,7 @@ void update_cubes(Scene* scene, Camera* cam, float deltaTime) {
                 cube->grabbed = false;
                 cube->velocity = glm::vec3(0.0f);
             } else {
-                cube->velocity = difference * 1000.0f * deltaTime;
+                cube->velocity = difference * 10.0f;
             }
             // cube->velocity = glm::vec3(0.0f);
             // cube->position = target_pos;
