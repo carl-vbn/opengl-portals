@@ -252,18 +252,22 @@ namespace renderer {
                 }
 
                 if (traversed_portal != NULL) {
+                    cube->color.b = 1.0f;
+
                     // Draw another cube in the other portal
                     glm::mat4 transformed_model = portal_transform(traversed_portal, other_portal) * model;
                     mvp = projection * view * transformed_model;
                     glUniformMatrix4fv(standard_shader.u_M, 1, GL_FALSE, glm::value_ptr(transformed_model));
                     glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
-                    glUniform3f(standard_shader.u_slicepos, traversed_portal->position.x, traversed_portal->position.y, traversed_portal->position.z);
-                    glUniform3f(standard_shader.u_slicenormal, traversed_portal->normal.x, traversed_portal->normal.y, traversed_portal->normal.z);
+                    // glUniform3f(standard_shader.u_slicepos, traversed_portal->position.x, traversed_portal->position.y, traversed_portal->position.z);
+                    // glUniform3f(standard_shader.u_slicenormal, traversed_portal->normal.x, traversed_portal->normal.y, traversed_portal->normal.z);
                     glUniform3f(standard_shader.u_color, cube->color.r, cube->color.g, cube->color.b);
                     glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
 
                     cube_slice_pos = other_portal->position;
                     cube_slice_normal = other_portal->normal;
+                } else {
+                    cube->color.b = 0.0f;
                 }
             }
 
@@ -271,8 +275,8 @@ namespace renderer {
             mvp = projection * view * model;
             glUniformMatrix4fv(standard_shader.u_M, 1, GL_FALSE, glm::value_ptr(model));
             glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
-            glUniform3f(standard_shader.u_slicepos, cube_slice_pos.x, cube_slice_pos.y, cube_slice_pos.z);
-            glUniform3f(standard_shader.u_slicenormal, cube_slice_normal.x, cube_slice_normal.y, cube_slice_normal.z);
+            // glUniform3f(standard_shader.u_slicepos, cube_slice_pos.x, cube_slice_pos.y, cube_slice_pos.z);
+            // glUniform3f(standard_shader.u_slicenormal, cube_slice_normal.x, cube_slice_normal.y, cube_slice_normal.z);
             glUniform3f(standard_shader.u_color, cube->color.r, cube->color.g, cube->color.b);
             glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
         }
