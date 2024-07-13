@@ -290,6 +290,7 @@ namespace renderer {
 
                 glBindTexture(GL_TEXTURE_2D, scene->portal2.open ? portal1_target.texture : 0);
                 render_portal(&scene->portal1, scene, view, glm::vec3(0.0f, 1.0f, 1.0f));
+                glEnable(GL_DEPTH_TEST);
             }
 
             if (scene->portal2.open) {
@@ -297,9 +298,9 @@ namespace renderer {
 
                 glBindTexture(GL_TEXTURE_2D, scene->portal1.open ? portal2_target.texture : 0);
                 render_portal(&scene->portal2, scene, view, glm::vec3(1.0f, 1.0f, 0.0f));
+                glEnable(GL_DEPTH_TEST);
             }
             glEnable(GL_CULL_FACE);
-            glEnable(GL_DEPTH_TEST);
         }
     }
 
