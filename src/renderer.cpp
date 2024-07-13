@@ -285,7 +285,7 @@ namespace renderer {
 
             glUseProgram(portal_shader.program);
             
-            if (scene->portal1.open) {
+            if (scene->portal1.open && !scene->portal2.draw_on_top) {
                 if (scene->portal1.draw_on_top) glDisable(GL_DEPTH_TEST);
 
                 glBindTexture(GL_TEXTURE_2D, scene->portal2.open ? portal1_target.texture : 0);
@@ -293,7 +293,7 @@ namespace renderer {
                 glEnable(GL_DEPTH_TEST);
             }
 
-            if (scene->portal2.open) {
+            if (scene->portal2.open && !scene->portal1.draw_on_top) {
                 if (scene->portal2.draw_on_top) glDisable(GL_DEPTH_TEST);
 
                 glBindTexture(GL_TEXTURE_2D, scene->portal1.open ? portal2_target.texture : 0);
