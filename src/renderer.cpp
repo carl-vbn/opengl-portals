@@ -252,22 +252,20 @@ namespace renderer {
                 }
 
                 if (traversed_portal != NULL) {
-                    cube->color.b = 1.0f;
+                    // Set slice plane to second portal
+                    glUniform3f(standard_shader.u_slicepos, other_portal->position.x, other_portal->position.y, other_portal->position.z);
+                    glUniform3f(standard_shader.u_slicenormal, other_portal->normal.x, other_portal->normal.y, other_portal->normal.z);
 
                     // Draw another cube in the other portal
                     glm::mat4 transformed_model = portal_transform(traversed_portal, other_portal) * model;
                     mvp = projection * view * transformed_model;
                     glUniformMatrix4fv(standard_shader.u_M, 1, GL_FALSE, glm::value_ptr(transformed_model));
                     glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
-                    // glUniform3f(standard_shader.u_slicepos, traversed_portal->position.x, traversed_portal->position.y, traversed_portal->position.z);
-                    // glUniform3f(standard_shader.u_slicenormal, traversed_portal->normal.x, traversed_portal->normal.y, traversed_portal->normal.z);
                     glUniform3f(standard_shader.u_color, cube->color.r, cube->color.g, cube->color.b);
                     glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
 
                     cube_slice_pos = other_portal->position;
                     cube_slice_normal = other_portal->normal;
-                } else {
-                    cube->color.b = 0.0f;
                 }
             }
 
@@ -275,8 +273,8 @@ namespace renderer {
             mvp = projection * view * model;
             glUniformMatrix4fv(standard_shader.u_M, 1, GL_FALSE, glm::value_ptr(model));
             glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
-            // glUniform3f(standard_shader.u_slicepos, cube_slice_pos.x, cube_slice_pos.y, cube_slice_pos.z);
-            // glUniform3f(standard_shader.u_slicenormal, cube_slice_normal.x, cube_slice_normal.y, cube_slice_normal.z);
+            glUniform3f(standard_shader.u_slicepos, cube_slice_pos.x, cube_slice_pos.y, cube_slice_pos.z);
+            glUniform3f(standard_shader.u_slicenormal, cube_slice_normal.x, cube_slice_normal.y, cube_slice_normal.z);
             glUniform3f(standard_shader.u_color, cube->color.r, cube->color.g, cube->color.b);
             glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
         }
@@ -303,15 +301,6 @@ namespace renderer {
             glEnable(GL_CULL_FACE);
             glEnable(GL_DEPTH_TEST);
         }
-
-        // Draw debug cube
-        // glUseProgram(standard_shader.program);
-        // if (debug_cube_xray) glClear(GL_DEPTH_BUFFER_BIT);
-        // mvp = projection * view * debug_cube_transform;
-        // glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
-        // glUniform3f(standard_shader.u_color, 1.0f, 0.0f, 0.0f);
-        // glUniform1i(standard_shader.u_highlightfrontface, 1);
-        // glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
     }
 
     // Render everything to the screen (this includes the FBO pass)
