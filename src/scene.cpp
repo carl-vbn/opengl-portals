@@ -53,69 +53,53 @@ void load_scene_file(const char* path, Scene* scene) {
     scene->cubes.push_back(Cube(glm::vec3(-10.0f, 10.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 }
 
-Camera::Camera(glm::mat4 transform) {
-    this->SetTransform(transform);
+Camera::Camera(glm::vec3 position, float yaw, float pitch)
+    : position(position) {
+    rotation = glm::quat(glm::vec3(pitch, yaw, 0.0f));
 }
 
-void Camera::SetTransform(glm::mat4 transform) {
-    this->yaw = -glm::sign(transform[0][2]) * glm::degrees(glm::acos(transform[0][0]));
-    this->pitch = -glm::sign(transform[2][1]) * glm::degrees(glm::acos(transform[1][1]));
-    this->position = glm::vec3(transform[3]);
-} 
+Camera::Camera(glm::mat4 transform) {
+    position = glm::vec3(transform[3]);
+    rotation = glm::quat_cast(transform);
+}
 
 glm::vec3 Camera::GetForwardDirection() {
-    // direction.x = cos(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
-    // direction.y = sin(glm::radians(this->pitch));
-    // direction.z = sin(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
-
-    glm::vec3 direction;
-    direction.x = -sin(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
-    direction.y = sin(glm::radians(this->pitch));
-    direction.z = -cos(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
-    return direction;
+    return rotation * glm::vec3(0.0f, 0.0f, -1.0f);
 }
 
 glm::vec3 Camera::GetPitchlessForwardDirection() {
-    // direction.x = cos(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
-    // direction.y = sin(glm::radians(this->pitch));
-    // direction.z = sin(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
-
-    glm::vec3 direction;
-    direction.x = -sin(glm::radians(this->yaw));
-    direction.y = 0.0f;
-    direction.z = -cos(glm::radians(this->yaw));
-    return direction;
+    glm::quat yawQuat = glm::angleAxis(glm::yaw(rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+    return yawQuat * glm::vec3(0.0f, 0.0f, -1.0f);
 }
 
 glm::vec3 Camera::GetRightDirection() {
-    return glm::cross(this->GetForwardDirection(), glm::vec3(0.0f, 1.0f, 0.0f));
+    return rotation * glm::vec3(1.0f, 0.0f, 0.0f);
 }
 
 glm::mat4 Camera::GetView() {
-    // glm::vec3 direction = this->GetForwardDirection();
-    // return glm::lookAt(
-    //     this->position, 
-    //     this->position + direction, 
-    //     glm::vec3(0.0f, 1.0f, 0.0f)
-    // );
-
-    glm::mat4 view(1.0f);
-
-    view = glm::rotate(view, glm::radians(-this->pitch), glm::vec3(1.0f, 0.0f, 0.0f));
-    view = glm::rotate(view, glm::radians(-this->yaw), glm::vec3(0.0f, 1.0f, 0.0f));
-
-    view = glm::translate(view, -this->position);
-    
-    return view;
+    return glm::lookAt(position, position + GetForwardDirection(), glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 glm::mat4 Camera::GetTransform() {
-    glm::mat4 rotationMatrix = glm::eulerAngleYX(glm::radians(this->yaw), glm::radians(this->pitch));
-    
-    glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), position);
-    
-    return translationMatrix * rotationMatrix;
+    glm::mat4 rotMatrix = glm::mat4_cast(rotation);
+    glm::mat4 transMatrix = glm::translate(glm::mat4(1.0f), position);
+    return transMatrix * rotMatrix;
 }
+
+glm::vec2 Camera::GetYawPitch() {
+    glm::vec3 eulerAngles = glm::eulerAngles(rotation);
+    return glm::vec2(eulerAngles.y, eulerAngles.x);  // yaw, pitch
+}
+
+void Camera::SetYawPitch(glm::vec2 yaw_pitch) {
+    rotation = glm::quat(glm::vec3(yaw_pitch.y, yaw_pitch.x, 0.0f));
+}
+
+void Camera::SetTransform(glm::mat4 transform) {
+    position = glm::vec3(transform[3]);
+    rotation = glm::quat_cast(transform);
+}
+
 
 glm::mat4 Cube::GetTransform() {
     return glm::translate(glm::mat4(1.0f), this->position);

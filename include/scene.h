@@ -1,6 +1,9 @@
 #pragma once
 
 #include <vector>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #include "mesh.h"
 
@@ -56,10 +59,10 @@ struct Scene {
 
 struct Camera {
     glm::vec3 position;
-    float yaw;
-    float pitch;
+    glm::quat rotation;
 
-    Camera(glm::vec3 position, float yaw, float pitch): position(position), yaw(yaw), pitch(pitch) {}
+    Camera(glm::vec3 position, glm::quat rotation) : position(position), rotation(rotation) {}
+    Camera(glm::vec3 position, float yaw, float pitch);
     Camera(glm::mat4 transform);
 
     glm::vec3 GetForwardDirection();
@@ -68,6 +71,9 @@ struct Camera {
 
     glm::mat4 GetView();
     glm::mat4 GetTransform();
+
+    glm::vec2 GetYawPitch();
+    void SetYawPitch(glm::vec2 yaw_pitch);
 
     void SetTransform(glm::mat4 transform);
 };

@@ -15,8 +15,8 @@
 
 #define CAPTURE_CURSOR
 #define MOVEMENT_SPEED 5.0f
-#define MOUSE_X_SENSITIVITY 0.1f
-#define MOUSE_Y_SENSITIVITY 0.1f
+#define MOUSE_X_SENSITIVITY 0.01f
+#define MOUSE_Y_SENSITIVITY 0.01f
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn);
@@ -200,8 +200,17 @@ void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
     float offsetx = xpos - last_cursor_x;
     float offsety = ypos - last_cursor_y;
 
-    cam.yaw -= offsetx * MOUSE_X_SENSITIVITY;
-    cam.pitch -= offsety * MOUSE_Y_SENSITIVITY;
+    glm::vec2 yawPitch = cam.GetYawPitch();
+    yawPitch.x -= offsetx * MOUSE_X_SENSITIVITY;
+    yawPitch.y -= offsety * MOUSE_Y_SENSITIVITY;
+
+    // make sure that when pitch is out of bounds, screen doesn't get flipped
+    if (yawPitch.y > 89.0f)
+        yawPitch.y = 89.0f;
+    if (yawPitch.y < -89.0f)
+        yawPitch.y = -89.0f;
+
+    cam.SetYawPitch(yawPitch);
 
 #ifdef CAPTURE_CURSOR
     if (xpos != 0.0f || ypos != 0.0f) {
@@ -213,12 +222,6 @@ void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
 
     last_cursor_x = xpos;
     last_cursor_y = ypos;
-
-    // make sure that when pitch is out of bounds, screen doesn't get flipped
-    if (cam.pitch > 89.0f)
-        cam.pitch = 89.0f;
-    if (cam.pitch < -89.0f)
-        cam.pitch = -89.0f;
 }
 
 bool place_portal(Portal* portal, RaycastHitInfo* hit_info) {
