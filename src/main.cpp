@@ -15,8 +15,8 @@
 
 #define CAPTURE_CURSOR
 #define MOVEMENT_SPEED 5.0f
-#define MOUSE_X_SENSITIVITY 0.01f
-#define MOUSE_Y_SENSITIVITY 0.01f
+#define MOUSE_X_SENSITIVITY 0.001f
+#define MOUSE_Y_SENSITIVITY 0.001f
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn);
@@ -197,20 +197,11 @@ void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
     }
 #endif
 
-    float offsetx = xpos - last_cursor_x;
-    float offsety = ypos - last_cursor_y;
+    float offsetx = last_cursor_x - xpos;
+    float offsety = last_cursor_y - ypos;
 
-    glm::vec2 yawPitch = cam.GetYawPitch();
-    yawPitch.x -= offsetx * MOUSE_X_SENSITIVITY;
-    yawPitch.y -= offsety * MOUSE_Y_SENSITIVITY;
-
-    // make sure that when pitch is out of bounds, screen doesn't get flipped
-    if (yawPitch.y > 89.0f)
-        yawPitch.y = 89.0f;
-    if (yawPitch.y < -89.0f)
-        yawPitch.y = -89.0f;
-
-    cam.SetYawPitch(yawPitch);
+    cam.rotation = glm::rotate(cam.rotation, offsetx * MOUSE_X_SENSITIVITY, glm::vec3(0,1,0));
+    cam.rotation = glm::rotate(cam.rotation, offsety * MOUSE_Y_SENSITIVITY, glm::vec3(1,0,0));
 
 #ifdef CAPTURE_CURSOR
     if (xpos != 0.0f || ypos != 0.0f) {
