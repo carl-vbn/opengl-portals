@@ -68,8 +68,9 @@ glm::vec3 Camera::GetForwardDirection() {
 }
 
 glm::vec3 Camera::GetPitchlessForwardDirection() {
-    glm::quat yawQuat = glm::angleAxis(glm::yaw(rotation), glm::vec3(0.0f, 1.0f, 0.0f));
-    return yawQuat * glm::vec3(0.0f, 0.0f, -1.0f);
+    glm::vec3 forward = GetForwardDirection();
+    forward.y = 0.0f;
+    return glm::normalize(forward);
 }
 
 glm::vec3 Camera::GetRightDirection() {

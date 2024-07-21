@@ -30,6 +30,8 @@ unsigned int screen_height = 720;
 Camera cam = Camera(glm::vec3(-5.0f, 10.0f, 2.0f), 0.0f, 0.0f);
 Scene scene;
 
+float cam_yaw = 0.0f;
+float cam_pitch = 0.0f;
 float vel_y = 0.0f;
 float last_cursor_x = 0.0f;
 float last_cursor_y = 0.0f;
@@ -200,8 +202,12 @@ void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
     float offsetx = last_cursor_x - xpos;
     float offsety = last_cursor_y - ypos;
 
-    cam.rotation = glm::rotate(cam.rotation, offsetx * MOUSE_X_SENSITIVITY, glm::vec3(0,1,0));
-    cam.rotation = glm::rotate(cam.rotation, offsety * MOUSE_Y_SENSITIVITY, glm::vec3(1,0,0));
+    cam_yaw += offsetx * MOUSE_X_SENSITIVITY;
+    cam_pitch += offsety * MOUSE_Y_SENSITIVITY;
+
+    cam.rotation = glm::identity<glm::quat>();
+    cam.rotation = glm::rotate(cam.rotation, cam_yaw, glm::vec3(0,1,0));
+    cam.rotation = glm::rotate(cam.rotation, cam_pitch, glm::vec3(1,0,0));
 
 #ifdef CAPTURE_CURSOR
     if (xpos != 0.0f || ypos != 0.0f) {
