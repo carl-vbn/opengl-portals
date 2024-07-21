@@ -205,6 +205,14 @@ void cursor_pos_callback(GLFWwindow* window, double xposIn, double yposIn)
     cam_yaw += offsetx * MOUSE_X_SENSITIVITY;
     cam_pitch += offsety * MOUSE_Y_SENSITIVITY;
 
+    // Clamp pitch
+    if (cam_pitch > glm::radians(89.0f)) {
+        cam_pitch = glm::radians(89.0f);
+    }
+    if (cam_pitch < glm::radians(-89.0f)) {
+        cam_pitch = glm::radians(-89.0f);
+    }
+
     cam.rotation = glm::identity<glm::quat>();
     cam.rotation = glm::rotate(cam.rotation, cam_yaw, glm::vec3(0,1,0));
     cam.rotation = glm::rotate(cam.rotation, cam_pitch, glm::vec3(1,0,0));
