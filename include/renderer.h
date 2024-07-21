@@ -29,6 +29,12 @@ struct PortalShader {
     GLuint u_inradius;
 };
 
+struct MonochromeShader {
+    GLuint program;
+    GLuint u_MVP;
+    GLuint u_color;
+};
+
 struct RenderTarget {
     GLuint fbo;
     GLuint rbo;

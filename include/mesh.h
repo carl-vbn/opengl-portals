@@ -5,8 +5,9 @@
 
 #define CUBE_VERTEX_COUNT 36
 
-#define POSITION_NORMAL 1
-#define POSITION_UV 2
+#define POSITION 1
+#define POSITION_NORMAL 2
+#define POSITION_UV 3
 
 struct MeshObjectData
 {
@@ -21,6 +22,7 @@ void del_meshobjdata(MeshObjectData **data);
 namespace primitives {
     extern MeshObjectData* quad;
     extern MeshObjectData* cube;
+    extern MeshObjectData* line;
 
     void setup();
     void dispose();

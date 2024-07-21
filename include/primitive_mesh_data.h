@@ -72,3 +72,10 @@ GLuint cube_indices[] = {
     20, 21, 22,
     22, 23, 20
 };
+
+GLfloat line_vertices[] = {
+    0.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, -1.0f
+};
+
+GLuint line_indices[] = { 0, 1 };

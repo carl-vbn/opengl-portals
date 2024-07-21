@@ -21,7 +21,11 @@ MeshObjectData* gen_meshobjdata(GLfloat* vertices, size_t vertex_array_size, GLu
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_array_size, indices, GL_STATIC_DRAW);
 
-    if (vertex_data_type == POSITION_NORMAL) {
+    if (vertex_data_type == POSITION) {
+        // aPos
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+    } else if (vertex_data_type == POSITION_NORMAL) {
         // aPos
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
@@ -61,10 +65,12 @@ void del_meshobjdata(MeshObjectData** data) {
 
 MeshObjectData* primitives::quad;
 MeshObjectData* primitives::cube;
+MeshObjectData* primitives::line;
 
 void primitives::setup() {
     quad = gen_meshobjdata(quad_vertices, sizeof(quad_vertices), quad_indices, sizeof(quad_indices), POSITION_UV);
     cube = gen_meshobjdata(cube_vertices, sizeof(cube_vertices), cube_indices, sizeof(cube_indices), POSITION_NORMAL);
+    line = gen_meshobjdata(line_vertices, sizeof(line_vertices), line_indices, sizeof(line_indices), POSITION);
 }
 
 void primitives::dispose() {

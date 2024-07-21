@@ -18,6 +18,7 @@ namespace renderer {
     StandardShader standard_shader;
     ScreenShader screen_shader;
     PortalShader portal_shader;
+    MonochromeShader monochrome_shader;
     glm::mat4 projection;
     RenderTarget main_target;
     RenderTarget portal1_target, portal2_target;
@@ -149,6 +150,10 @@ namespace renderer {
         LOCATE_UNIFORM(portal_shader, u_outradius);
         LOCATE_UNIFORM(portal_shader, u_inradius);
 
+        LOAD_SHADERPRG(monochrome_shader, "monochrome");
+        LOCATE_UNIFORM(monochrome_shader, u_MVP);
+        LOCATE_UNIFORM(monochrome_shader, u_color);
+
         aspect_ratio = (float)scr_width / scr_height;
         projection = glm::perspective(fov, aspect_ratio, 0.1f, 100.0f);
 
@@ -180,6 +185,30 @@ namespace renderer {
         del_rendertarget(&main_target);
         del_rendertarget(&portal1_target);
         del_rendertarget(&portal2_target);
+    }
+
+    // Draw a cube where the camera 'cam' is in the scene
+    // and draw a line to signal the direction the camera is facing
+    void render_debug_camera(Camera* cam, Camera* main_camera) {
+        // Cube
+        glUseProgram(standard_shader.program);
+        glBindVertexArray(primitives::cube->vao);
+        glm::mat4 model = cam->GetTransform();
+        model = glm::scale(model, glm::vec3(0.1f));
+        glm::mat4 mvp = projection * main_camera->GetView() * model;
+        glUniformMatrix4fv(standard_shader.u_M, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(standard_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+        glUniform3f(standard_shader.u_color, 1.0f, 0.0f, 0.0f);
+        glDrawElements(GL_TRIANGLES, CUBE_VERTEX_COUNT, GL_UNSIGNED_INT, 0);
+
+        // Line
+        glUseProgram(monochrome_shader.program);
+        glBindVertexArray(primitives::line->vao);
+        glUniform3f(monochrome_shader.u_color, 1.0f, 0.0f, 1.0f);
+        model = glm::scale(model, glm::vec3(5.0f));
+        mvp = projection * main_camera->GetView() * model;
+        glUniformMatrix4fv(monochrome_shader.u_MVP, 1, GL_FALSE, glm::value_ptr(mvp));
+        glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, 0);
     }
 
     void render_portal(Portal* portal, Scene* scene, glm::mat4 view, glm::vec3 color) {
@@ -305,7 +334,9 @@ namespace renderer {
     }
 
     // Render everything to the screen (this includes the FBO pass)
-    void render_screen(Scene* scene, Camera* cam) {        
+    void render_screen(Scene* scene, Camera* cam) {
+        Camera tcam = *cam;
+
         if (portals_open(scene)) {
             // First portal target
             Camera p1cam = Camera(pcam_transform(cam, &scene->portal1, &scene->portal2));
@@ -321,12 +352,18 @@ namespace renderer {
             glBindFramebuffer(GL_FRAMEBUFFER, portal2_target.fbo);
             glEnable(GL_DEPTH_TEST);
             render_scene(scene, p2cam.GetView(), projection, false, scene->portal1.position, scene->portal1.normal);
+
+            tcam = p1cam;
         }
 
         // Main target
         glBindFramebuffer(GL_FRAMEBUFFER, main_target.fbo);
         glEnable(GL_DEPTH_TEST);
         render_scene(scene, cam->GetView(), projection);
+
+        glDisable(GL_DEPTH_TEST);
+        render_debug_camera(&tcam, cam);
+        glEnable(GL_DEPTH_TEST);
 
         // Draw to screen
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
